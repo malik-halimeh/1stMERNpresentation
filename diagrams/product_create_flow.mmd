@@ -1,0 +1,19 @@
+%% OptiCart — product create (multipart upload -> Cloudinary -> Mongo)
+sequenceDiagram
+  participant A as Admin UI (Products.tsx)
+  participant M as Multer (memory)
+  participant V as Zod validator
+  participant CL as Cloudinary
+  participant DB as MongoDB products
+  participant AUD as AuditLog
+
+  A->>M: POST /api/products (multipart: fields + image files)
+  Note over M: authenticate + authorize(inventory_manager|super_admin)
+  M->>V: parse body against allow-list schema
+  V-->>M: reject unknown/invalid -> 400 AppError
+  M->>CL: stream each buffer to Cloudinary
+  CL-->>M: secure_url[]
+  M->>DB: create Product { variants[], images[], costPriceCents }
+  DB-->>M: saved doc
+  M->>AUD: write audit { action: product_create, actor, target }
+  M-->>A: 201 product

@@ -1,0 +1,19 @@
+%% OptiCart — checkout & payment (fail-closed webhook, atomic stock)
+sequenceDiagram
+  participant C as Client (Checkout.tsx)
+  participant O as /api/orders
+  participant S as Stripe
+  participant W as /api/orders/webhook (raw body)
+  participant DB as MongoDB
+
+  C->>O: POST /checkout (cart, couponCode, address)
+  O->>DB: re-price cart server-side · re-validate coupon (caps/expiry/min)
+  O->>S: create PaymentIntent (or mock if keyless)
+  S-->>C: client_secret -> confirm payment
+  S->>W: POST webhook (payment_intent.succeeded)
+  Note over W: verify signature FAIL-CLOSED (400 if missing/invalid)
+  W->>DB: for each variant: $inc stock guarded by stock>=qty (atomic)
+  Note over W: lost race -> clamp to 0 + warn (never oversell)
+  W->>DB: create Order (server prices, line snapshots)
+  W->>DB: write purchase ProductEvent (carries userId -> recs)
+  W-->>S: 200 ack

@@ -63,10 +63,24 @@
 - README drift → FIXED; server/.env.example exists
 - STILL OPEN (re-verified): register email enumeration (auth.ts:101 409 AUTH_EMAIL_IN_USE); view-event spoofing bounded not prevented (routes/productEvents.ts public); JWT role staleness ≤15min (inherent); hard-delete users (user.ts deleteUser); in-process cron + in-memory rate-limit store (scaling); morgan dev logging; no CI/Docker; 546kB client bundle; server/dist tracked in git; DB spec docs deleted from repo
 
-## Next phases (not yet requested in detail — awaiting instructions)
-- [ ] Manuals (per-presenter speaker material) — build FROM 00_ANALYSIS only
-- [ ] Question bank — build FROM 00_ANALYSIS only
-- [ ] PowerPoint / deck — build FROM 00_ANALYSIS only
+## Phase 3 — 3-STEP mandate (self-contained HTML, shared template, current code = ground truth)
+- [x] **STEP 1 REFRESH (gate)** — `00_ANALYSIS/analysis_refresh.html` built (35.6 KB, 7 TOC): "How verified", 21-row Changelog vs previous analysis, corrected 26-feature inventory (all COMPLETE), corrected flow descriptions, updated audit scores (mean 7.25→7.8), "Still open" warn box. **This file beats the older 00_ANALYSIS docs on conflict; code beats both.**
+- [x] **Jira CSV now PROVIDED** — `OptiCart_Jira_Import_v2.csv` added to project root (untracked) 2026-07-11. Corrects the old "[NOT FOUND]" claim: 11 epics / 40 sub-tasks / owners malik+mahmod+haya / 311 story pts. Its STATUS column is a MID-SPRINT SNAPSHOT (Stories 6–11 = In Progress/To Do) — current code has delivered ALL of them. Refresh row 21 + new #sprint section document this; planning_phase.html's "reconstructed sprints" is now superseded by the refresh.
+- [x] STEP 2 — shared template `presentation/assets/template.html` (DESIGN SYSTEM, scroll-spy, print)
+- [x] STEP 3A — `project_master_guide.html` (33.3 KB, 22 TOC: what/layout/lifecycle/auth/data/9 feature workflows/errors/frontend/prod-readiness/strengths-weaknesses)
+- [x] STEP 3B — `manuals/{malik,haya,mahmod}_manual.html` — each exactly 7 sections (scope · concepts · end-to-end trace · 26 Q&A · 10 curveballs · new-concept-learned · still-challenging); 36 .qa blocks each
+- [x] STEP 3C — `diagrams/` 8 .mmd sources (architecture, request_lifecycle, auth_flow, product_create_flow, checkout_flow, database_erd, rbac, folder_structure) + `diagrams.html` gallery (8 hand-authored offline inline SVGs, each with its .mmd in a collapsible)
+- [x] STEP 3D — `questions/question_bank.html` (44.3 KB, **124 .qa**, 7 sections presenter-tagged; §7 = 17 "we actually hit this" war stories incl. webhook/JWT-hoist/low-stock-index/oversell/refund/stranded-login/mega-menu/coupon-bypass)
+- [x] STEP 3E — `audit/audit.html` (20.3 KB, 4 sections: 15 Strengths · 8 warn-boxed Weaknesses · 11 Improvements · 6 warn-boxed Code Smells; mean 7.8/10)
+- [x] Structural verification PASS on all 8: zero placeholders, balanced details/table/svg, template chrome present, 124≥120 .qa, each manual 7 sections
+- Build with: `node <scratch>/html2/build2.mjs` (skips missing bodies; mkdirs subdirs). Bodies live in `<scratch>/html2/bodies/`; shared template `presentation/assets/template.html`.
+
+### Phase 3 — COMPLETE (2026-07-11). Deliverable tree under `presentation/`:
+- `00_ANALYSIS/analysis_refresh.html` (gate) · `project_master_guide.html`
+- `manuals/{malik,haya,mahmod}_manual.html`
+- `diagrams/*.mmd` (8) + `diagrams/diagrams.html`
+- `questions/question_bank.html` · `audit/audit.html`
+- `assets/template.html` (shared design-system template)
 
 ## Key findings log (source of truth summaries)
 - **[KNOWN ISSUE]** Stripe webhook signature verification structurally broken: `express.json()` (server.ts:29) consumes raw body → `constructEvent` always throws → falls back to trusting unverified body (order.ts:192-201). SECURITY_REVIEW W1.

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analysis Refresh — Corrections vs. Previous Analysis — OptiCart Analysis</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:900px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.92);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:26px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:-18px 0 26px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:38px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;
+       word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .st.gray{background:rgba(148,163,184,.14);color:var(--muted)}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:12px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 16px;border-top:1px solid var(--border)}
+
+  /* ── diagrams ── */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+           padding:18px;margin:16px 0;overflow-x:auto}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram .cap{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+
+  /* ── misc ── */
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);
+               font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:0 16px 60px}
+  }
+
+  /* ── print ── */
+  @media print{
+    .sidebar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary{color:#000 !important}
+    .qa,.codeblock,.note,.warn,tr{page-break-inside:avoid}
+    details{border-color:#999}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+  }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Analysis</div>
+    <p>Presentation deliverable · HEAD 175e68e</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#verify" class="">How the refresh was verified</a></li>
+    <li><a href="#changelog" class="">Changelog vs. previous analysis</a></li>
+    <li><a href="#sprint" class="">Sprint plan — now sourced from the real Jira import</a></li>
+    <li><a href="#inventory" class="">Corrected feature inventory (verified statuses)</a></li>
+    <li><a href="#flows" class="">Corrected flow descriptions (what changed in the logic)</a></li>
+    <li><a href="#scores" class="">Updated audit scores (movement vs. 2026-07-10)</a></li>
+    <li><a href="#still-open" class="">Still open — the only labels that may be carried forward</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>All documents</h4>
+    <a href="../00_ANALYSIS/analysis_refresh.html" class="current">Analysis Refresh</a>
+    <a href="../project_master_guide.html" class="">Project Master Guide</a>
+    <a href="../manuals/haya_manual.html" class="">Haya</a>
+    <a href="../manuals/malik_manual.html" class="">Malik</a>
+    <a href="../manuals/mahmod_manual.html" class="">Mahmod</a>
+    <a href="../diagrams/diagrams.html" class="">Diagram Gallery</a>
+    <a href="../questions/question_bank.html" class="">Question Bank</a>
+    <a href="../audit/audit.html" class="">Audit</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Analysis Refresh — Corrections vs. Previous Analysis</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">Every status re-verified against HEAD 175e68e. This file takes precedence over the older 00_ANALYSIS documents on any conflict; the code takes precedence over both.</p>
+<div class="note"><strong>How to use this file:</strong> the original 00_ANALYSIS documents were first generated on 2026-07-10 against commit <code>1e25f09</code>, <em>before</em> two rounds of fixes (the team's UX/logic corrections and the security hardening pass) and before the Purchases feature existed. Everything below was re-verified line-by-line against the current code at HEAD <code>175e68e</code>. <strong>On any conflict: this file beats the older analysis; the code beats both.</strong></div>
+
+<h2 id="verify">How the refresh was verified</h2>
+<ul>
+<li><strong>Read-only git inspection:</strong> <code>git log --oneline</code> identified the fix range <code>1e25f09 → 175e68e</code> (commits <code>5620779</code> header/scroll, <code>992eaea</code> reset password + responsiveness, <code>c7f10b8</code>, <code>de8c9cb</code> security hardening, <code>71c8cfd</code> purchases, <code>175e68e</code> header/footer); <code>git diff --stat</code> across that range listed every changed file.</li>
+<li><strong>Every file the old analysis flagged</strong> [PARTIAL]/[KNOWN ISSUE] was re-read in its current form, plus all routes, controllers, middleware, <code>App.tsx</code>, <code>services/api.ts</code>, <code>AuthContext.tsx</code>, and both layout components.</li>
+<li><strong>Behavioral evidence</strong> beyond reading: <code>server/src/test_fixes.ts</code> (20/20 checks), clean <code>tsc</code> builds of both workspaces, and an HTTP smoke test through the real middleware chain.</li>
+</ul>
+
+<h2 id="changelog">Changelog vs. previous analysis</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>Old analysis said</th><th>Current code (verified)</th><th>Where</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><span class="st bad">KNOWN ISSUE</span> Stripe webhook signature verification structurally broken — <code>express.json</code> consumed the raw body, handler fell back to trusting unverified input</td><td><span class="st ok">FIXED</span> Raw-body mount before the JSON parser; fail-closed verification (400 <code>WEBHOOK_SIGNATURE_MISSING/INVALID</code>); mock mode explicitly scoped to keyless dev</td><td><code>server.ts</code> · <code>controllers/order.ts stripeWebhook</code></td></tr>
+<tr><td>2</td><td><span class="st warn">PARTIAL</span> Password reset dead-ended: console-logged link to a route that existed nowhere; <code>ResetPasswordValidator</code> dead code</td><td><span class="st ok">COMPLETE</span> Two-step 6-digit code flow; reset re-hashes, verifies the email, and rotates the refresh token (revokes hijacked sessions)</td><td><code>controllers/auth.ts resetPassword</code> · <code>ForgotPassword.tsx</code> · <code>models/User.ts</code> reset fields</td></tr>
+<tr><td>3</td><td><span class="st bad">KNOWN ISSUE</span> Coupon usage/per-user caps skipped at checkout (bypass by posting <code>couponCode</code> directly)</td><td><span class="st ok">FIXED</span> <code>createCheckoutSession</code> re-validates existence/active/expiry/min-order/global/per-user with typed AppErrors</td><td><code>controllers/order.ts:108-148</code></td></tr>
+<tr><td>4</td><td><span class="st warn">PARTIAL</span> Refunds were status-only — <code>order.refund</code> never populated, no Stripe call, <code>refund_decision</code> never written</td><td><span class="st ok">COMPLETE</span> <code>stripe.refunds.create</code> (mock id keyless) <em>before</em> persisting; refund subdoc filled; dedicated <code>refund_decision</code> audit; 502 abort on Stripe failure</td><td><code>controllers/order.ts updateOrderStatus</code></td></tr>
+<tr><td>5</td><td><span class="st bad">KNOWN ISSUE</span> LowStockAlert unique index also capped <em>resolved</em> docs — second resolve threw E11000</td><td><span class="st ok">FIXED</span> Partial unique index (active only) + boot-time <code>syncIndexes()</code> to drop the stale index</td><td><code>models/LowStockAlert.ts:60-63</code> · <code>server.ts</code></td></tr>
+<tr><td>6</td><td><span class="st bad">KNOWN ISSUE</span> Mega-menu hardcoded (names not slugs → empty lists; fake featured ids); mobile drawer used raw <code>&lt;a&gt;</code> full reloads into a dead route</td><td><span class="st ok">FIXED</span> Nav fed by live <code>GET /categories</code>, all clicks navigate by slug via <code>goToCategory()</code>; drawer fully SPA; fake featured panel removed. The hover-collapse fix (180 ms debounce + hit-area bridge) is retained</td><td><code>StorefrontLayout.tssx</code> → verified in <code>StorefrontLayout.tsx:16-48,143-198,322-376</code></td></tr>
+<tr><td>7</td><td>Old analysis (pre-rework) described a header <em>live-suggestion dropdown</em> search</td><td><span class="st info">CHANGED</span> The header search is now a <strong>submit-to-shop form</strong> synced with the URL's <code>?search=</code> param (no suggestion dropdown); ProductList reads the param. Two-row header; footer gained contact info + inline-SVG social icons</td><td><code>StorefrontLayout.tsx</code> (commit <code>175e68e</code>)</td></tr>
+<tr><td>8</td><td><span class="st warn">PARTIAL</span> <code>/admin/profile</code> was a title-only stub</td><td><span class="st ok">COMPLETE</span> Real page: identity card, live name editing via PATCH /auth/profile, password guidance; stub helpers removed from <code>App.tsx</code></td><td><code>pages/admin/Profile.tsx</code></td></tr>
+<tr><td>9</td><td>Old analysis: admin dashboard tiles truncated at the default page size</td><td><span class="st ok">FIXED</span> Tiles fetch <code>?limit=100</code>; dashboard also gained a <strong>month purchase-spend tile</strong> via <code>/purchases/summary</code></td><td><code>admin/Dashboard.tsx</code></td></tr>
+<tr><td>10</td><td><span class="st bad">MISMATCH</span> Hardcoded fallback JWT secret; and (worse, found during fixing) ESM import hoisting meant the fallback was used <em>even when .env set a secret</em></td><td><span class="st ok">FIXED</span> Secret resolved lazily (honors .env); production refuses to boot without <code>JWT_ACCESS_SECRET</code>; dev fallback warns loudly</td><td><code>utils/tokens.ts getAccessSecret</code></td></tr>
+<tr><td>11</td><td><span class="st bad">MISMATCH</span> Global limiter comment said 100/15 min, code said 10 000</td><td><span class="st ok">FIXED</span> 1000/15 min with an accurate comment</td><td><code>middleware/rateLimiter.ts</code></td></tr>
+<tr><td>12</td><td><span class="st warn">WEAKNESS</span> <code>controllers/user.ts</code> bypassed the error pipeline and returned raw error objects in 500s</td><td><span class="st ok">FIXED</span> Full AppError pipeline; typed codes; ObjectId validation added</td><td><code>controllers/user.ts</code></td></tr>
+<tr><td>13</td><td><span class="st warn">WEAKNESS</span> Stock decremented read-modify-save at payment (oversell race)</td><td><span class="st ok">FIXED</span> Atomic conditional <code>$inc</code> guarded by <code>stock ≥ qty</code>; lost race clamps to 0 with a logged warning</td><td><code>controllers/order.ts</code> webhook loop</td></tr>
+<tr><td>14</td><td><span class="st warn">WEAKNESS</span> Review images accepted as raw client URLs</td><td><span class="st ok">FIXED</span> Body images ignored on create/update (no upload pipeline exists for reviews)</td><td><code>controllers/review.ts</code></td></tr>
+<tr><td>15</td><td>AuditLog: only <code>timestamp</code> indexed despite four filterable fields; 8 action types with <code>refund_decision</code> never written</td><td><span class="st ok">FIXED / EXTENDED</span> actorId/actionType/targetEntityId indexes added; <strong>9</strong> action types, all written — <code>refund_decision</code> by the refund flow, new <code>stock_purchase</code> by the purchases feature</td><td><code>models/AuditLog.ts</code></td></tr>
+<tr><td>16</td><td><span class="st gray">DOC DRIFT</span> README named a nonexistent CartContext, Router v6, missing .env.example, unused env vars</td><td><span class="st ok">FIXED</span> README accurate (ShopContext, Router v7, real env list, five mail triggers); <code>server/.env.example</code> exists with mock-friendly defaults</td><td><code>README.md</code> · <code>server/.env.example</code></td></tr>
+<tr><td>17</td><td>Old analysis counted <strong>13 collections</strong> and 15 routers</td><td><span class="st info">NEW FEATURE</span> <strong>14 collections / 16 routers</strong>: the Purchases procurement domain — atomic weighted-average-cost pipeline update, compensating revert, guarded delete-revert, month KPIs, analytics <code>purchase-spend</code> series (5 analytics endpoints now), admin page + nav + dashboard tile</td><td><code>models/Purchase.ts</code> · <code>controllers/purchase.ts</code> · <code>routes/purchase.ts</code> · <code>admin/Purchases.tsx</code></td></tr>
+<tr><td>18</td><td>Old analysis: seed used placehold.co placeholder images</td><td><span class="st info">CHANGED</span> Seed ships 2 real Unsplash CDN photos per product; a one-off script (<code>src/update_product_images.ts</code>) upgrades a live DB in place</td><td><code>server/seed.ts</code></td></tr>
+<tr><td>19</td><td>Old analysis: customers landed on <code>/account</code> after sign-in; a <code>?redirect=</code> back to an auth page could strand the user on the login screen</td><td><span class="st ok">FIXED</span> Customers land on the storefront after login/register/Google/reset; auth-page redirects are ignored; staff land on <code>/admin/dashboard</code>; scroll resets per navigation</td><td><code>Login.tsx:24-31</code> · <code>Register.tsx</code> · <code>ForgotPassword.tsx</code> · <code>App.tsx</code></td></tr>
+<tr><td>20</td><td>Suspicion in early smell notes: <code>ui/SearchBox.tsx</code> possibly unused</td><td><span class="st ok">RETRACTED</span> Verified used by <strong>7 admin pages</strong> (Products, Orders, Coupons, LowStock, Reviews, users, AuditLogs)</td><td>grep across <code>client/src</code></td></tr>
+<tr><td>21</td><td><span class="st gray">NOT FOUND</span> Old analysis: the Jira import CSV was absent from the working tree and from all of git history, so the sprint plan was <em>reconstructed</em> from the commit log and labelled as such</td><td><span class="st info">NOW PROVIDED</span> <code>OptiCart_Jira_Import_v2.csv</code> now sits in the project root: 11 epics, 40 sub-tasks, real assignees (malik/mahmod/haya), story points and logged time. Its <em>status column is a mid-sprint snapshot</em> (Stories 6–11 show In Progress/To Do) — the current code has since delivered all of them. See the section below</td><td><code>OptiCart_Jira_Import_v2.csv</code> (project root, untracked)</td></tr>
+</tbody></table></div>
+
+<h2 id="sprint">Sprint plan — now sourced from the real Jira import</h2>
+<div class="note"><strong>Read the status column as a snapshot, not a verdict.</strong> The CSV was exported partway through the project: it marks Stories 6–11 as <em>In Progress</em> / <em>To Do</em>. The current code has every one of them fully implemented and verified (see the corrected inventory above — 26/26 features COMPLETE). Present this table as <em>"here is how we planned and split the work"</em>, and let the working product speak for delivery. This is the only place the phrase "reconstructed sprints" from <code>00_ANALYSIS/planning_phase.html</code> is superseded — the plan is no longer reconstructed; it is the imported board.</div>
+<div class="tablewrap"><table>
+<thead><tr><th>Epic</th><th>Owner</th><th>Sub-tasks</th><th>Story pts</th><th>Board status (snapshot)</th><th>In current code</th></tr></thead>
+<tbody>
+<tr><td>1 · Foundation &amp; environment</td><td><span class="chip malik">malik</span></td><td>4</td><td>18</td><td><span class="st ok">Done</span></td><td><span class="st ok">✓ shipped</span></td></tr>
+<tr><td>2 · Database schema &amp; seed</td><td><span class="chip mahmod">mahmod</span></td><td>3</td><td>26</td><td><span class="st ok">Done</span></td><td><span class="st ok">✓ shipped (14 models)</span></td></tr>
+<tr><td>3 · Auth &amp; authorization</td><td><span class="chip malik">malik</span></td><td>5</td><td>42</td><td><span class="st ok">Done</span></td><td><span class="st ok">✓ shipped</span></td></tr>
+<tr><td>4 · Product catalog</td><td><span class="chip haya">haya</span></td><td>4</td><td>34</td><td><span class="st ok">Done</span></td><td><span class="st ok">✓ shipped</span></td></tr>
+<tr><td>5 · Cart &amp; wishlist</td><td><span class="chip haya">haya</span></td><td>3</td><td>24</td><td><span class="st ok">Done</span></td><td><span class="st ok">✓ shipped</span></td></tr>
+<tr><td>6 · Checkout &amp; payments</td><td><span class="chip mahmod">mahmod</span></td><td>3</td><td>26</td><td><span class="st warn">In Progress</span></td><td><span class="st ok">✓ shipped (fail-closed webhook)</span></td></tr>
+<tr><td>7 · Customer account &amp; orders</td><td><span class="chip malik">malik</span></td><td>3</td><td>29</td><td><span class="st warn">In Progress</span></td><td><span class="st ok">✓ shipped</span></td></tr>
+<tr><td>8 · Reviews &amp; ratings</td><td><span class="chip mahmod">mahmod</span></td><td>3</td><td>18</td><td><span class="st warn">In Progress</span></td><td><span class="st ok">✓ shipped</span></td></tr>
+<tr><td>9 · Admin — inventory management</td><td><span class="chip haya">haya</span></td><td>4</td><td>37</td><td><span class="st warn">In Progress</span></td><td><span class="st ok">✓ shipped</span></td></tr>
+<tr><td>10 · Super-admin tools</td><td><span class="chip malik">malik</span></td><td>4</td><td>34</td><td><span class="st bad">To Do</span></td><td><span class="st ok">✓ shipped (users, analytics, audit)</span></td></tr>
+<tr><td>11 · Automation &amp; background jobs</td><td><span class="chip mahmod">mahmod</span></td><td>3</td><td>23</td><td><span class="st bad">To Do</span></td><td><span class="st ok">✓ shipped (cron recs, events, low-stock)</span></td></tr>
+<tr><td><strong>Totals</strong></td><td></td><td><strong>39</strong></td><td><strong>311</strong></td><td></td><td><strong>All delivered</strong></td></tr>
+</tbody></table></div>
+<p><strong>How to talk about the gap.</strong> If someone asks "the board shows checkout as In&nbsp;Progress — is it finished?", the honest answer is: <em>the CSV is an early export; every epic on it is now complete and hardened in the code — in fact the payments epic went beyond the original plan with a fail-closed webhook, atomic stock, and real refunds that weren't in the original sub-task breakdown.</em> Points split fairly evenly across the three of us (malik ≈ 123, haya ≈ 95, mahmod ≈ 93), which matches the roles matrix in <code>00_ANALYSIS/planning_phase.html</code>.</p>
+
+<h2 id="inventory">Corrected feature inventory (verified statuses)</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>Feature</th><th>Status</th><th>Key files</th><th>Presenter</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Auth: register + email verification, login, Google, logout</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/auth.ts</code> · <code>AuthContext.tsx</code></td><td><span class="chip malik">Malik</span></td></tr>
+<tr><td>2</td><td>Refresh rotation + reuse detection + single-flight client</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/auth.ts</code> · <code>services/api.ts</code></td><td><span class="chip malik">Malik</span></td></tr>
+<tr><td>3</td><td>Password reset (6-digit code, session rotation)</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/auth.ts</code> · <code>ForgotPassword.tsx</code></td><td><span class="chip malik">Malik</span> <span class="chip haya">Haya</span></td></tr>
+<tr><td>4</td><td>RBAC (3 roles, server-enforced + client guards)</td><td><span class="st ok">COMPLETE</span></td><td><code>middleware/auth.ts</code> · <code>App.tsx</code></td><td><span class="chip malik">Malik</span></td></tr>
+<tr><td>5</td><td>Catalog: filters, sorts, text search, header search, pagination</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/product.ts</code> · <code>ProductList.tsx</code> · <code>StorefrontLayout.tsx</code></td><td><span class="chip haya">Haya</span></td></tr>
+<tr><td>6</td><td>Product detail (variants, per-variant photos, zoom, events)</td><td><span class="st ok">COMPLETE</span></td><td><code>ProductDetail.tsx</code></td><td><span class="chip haya">Haya</span></td></tr>
+<tr><td>7</td><td>Product CRUD (multipart, Cloudinary, guards, audits)</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/product.ts</code> · <code>admin/Products.tsx</code></td><td><span class="chip haya">Haya</span> <span class="chip malik">Malik</span></td></tr>
+<tr><td>8</td><td>Category tree (2-level, slug-filtered)</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/category.ts</code> · <code>Inventory/Categories.tsx</code></td><td><span class="chip mahmod">Mahmod</span></td></tr>
+<tr><td>9</td><td>Cart guest+auth, live revalidation, merge</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/cart.ts</code> · <code>utils/guestCart.ts</code></td><td><span class="chip haya">Haya</span></td></tr>
+<tr><td>10</td><td>Wishlist guest+auth, merge</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/wishlist.ts</code> · <code>pages/Wishlist.tsx</code></td><td><span class="chip haya">Haya</span></td></tr>
+<tr><td>11</td><td>Coupons (preview + checkout enforcement + audited CRUD)</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/coupon.ts</code> · <code>controllers/order.ts</code></td><td><span class="chip malik">Malik</span></td></tr>
+<tr><td>12</td><td>Checkout + Stripe (fail-closed webhook, atomic stock, mock mode)</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/order.ts</code> · <code>Checkout.tsx</code></td><td><span class="chip malik">Malik</span></td></tr>
+<tr><td>13</td><td>Order lifecycle (state machine, reasons, notifications, emails)</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/order.ts</code> · <code>admin/Orders.tsx</code></td><td><span class="chip malik">Malik</span> <span class="chip haya">Haya</span></td></tr>
+<tr><td>14</td><td>Refunds (Stripe/mock + refund subdoc + dedicated audit)</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/order.ts</code></td><td><span class="chip malik">Malik</span></td></tr>
+<tr><td>15</td><td>Order feedback (owner, post-confirmation)</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/order.ts</code> · <code>OrderDetail.tsx</code></td><td><span class="chip haya">Haya</span></td></tr>
+<tr><td>16</td><td>Reviews (verified purchase, unique index, transactions, moderation)</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/review.ts</code> · <code>models/Review.ts</code></td><td><span class="chip mahmod">Mahmod</span></td></tr>
+<tr><td>17</td><td>Low-stock alerts (partial unique index, resolve, emails)</td><td><span class="st ok">COMPLETE</span></td><td><code>models/LowStockAlert.ts</code> · <code>controllers/lowStock.ts</code></td><td><span class="chip mahmod">Mahmod</span></td></tr>
+<tr><td>18</td><td><strong>Purchases / procurement (weighted-average costing)</strong></td><td><span class="st ok">COMPLETE</span> <span class="st info">NEW</span></td><td><code>controllers/purchase.ts</code> · <code>admin/Purchases.tsx</code></td><td><span class="chip malik">Malik</span> <span class="chip mahmod">Mahmod</span></td></tr>
+<tr><td>19</td><td>Audit log (append-only, 9 types, indexed filters)</td><td><span class="st ok">COMPLETE</span></td><td><code>models/AuditLog.ts</code> · <code>admin/AuditLogs.tsx</code></td><td><span class="chip mahmod">Mahmod</span></td></tr>
+<tr><td>20</td><td>Recommendations (nightly co-occurrence + cache-only reads)</td><td><span class="st ok">COMPLETE</span></td><td><code>services/scheduler.ts</code> · <code>controllers/recommendation.ts</code></td><td><span class="chip malik">Malik</span></td></tr>
+<tr><td>21</td><td>Product events (batched anonymous views, TTL 180 d)</td><td><span class="st ok">COMPLETE</span> — stated limitation: views never user-attributed, spoofable within rate limits</td><td><code>routes/productEvents.ts</code></td><td><span class="chip mahmod">Mahmod</span></td></tr>
+<tr><td>22</td><td>Analytics (5 series incl. purchase spend)</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/analytics.ts</code> · <code>admin/Analytics.tsx</code></td><td><span class="chip malik">Malik</span></td></tr>
+<tr><td>23</td><td>In-app notifications (bell, unread, mark-all-read)</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/notification.ts</code> · <code>ui/NotificationBell.tsx</code></td><td><span class="chip haya">Haya</span></td></tr>
+<tr><td>24</td><td>Emails (5 triggers, SMTP or console stub)</td><td><span class="st ok">COMPLETE</span></td><td><code>services/mailer.ts</code></td><td><span class="chip malik">Malik</span></td></tr>
+<tr><td>25</td><td>User management (allowlists, audited role/status, self-blocks)</td><td><span class="st ok">COMPLETE</span></td><td><code>controllers/user.ts</code> · <code>admin/users.tsx</code></td><td><span class="chip malik">Malik</span></td></tr>
+<tr><td>26</td><td>Admin shell (dashboard KPIs incl. spend tile, real profile page)</td><td><span class="st ok">COMPLETE</span></td><td><code>admin/Dashboard.tsx</code> · <code>admin/Profile.tsx</code></td><td><span class="chip haya">Haya</span></td></tr>
+</tbody></table></div>
+
+<h2 id="flows">Corrected flow descriptions (what changed in the logic)</h2>
+<ul>
+<li><strong>Webhook flow:</strong> now begins with a raw Buffer; in real-Stripe mode the signature check is mandatory and terminal — the "fallback to parsed body" branch <em>no longer exists</em>. Any description of the old fallback is obsolete.</li>
+<li><strong>Refund flow:</strong> refund is now a money-movement step that runs <em>before</em> the status persists; describing "refunded" as a pure status change is obsolete.</li>
+<li><strong>Stock math:</strong> all stock mutations (payment decrement, purchase addition, purchase-delete revert) are single-document atomic operations with guards; the read-modify-save description is obsolete. Purchases additionally recompute weighted-average <code>costPriceCents</code> inside the same update (<code>controllers/purchase.ts:83-139</code>).</li>
+<li><strong>Post-sign-in routing:</strong> customers → storefront home (auth-page redirects ignored); staff → admin dashboard; old "/account default" descriptions are obsolete.</li>
+<li><strong>Header search:</strong> URL-driven submit form (<code>?search=</code>), not a live-suggestion dropdown.</li>
+<li><strong>Secrets at boot:</strong> token signing reads the secret lazily at first use; production boot fails without it — descriptions of a module-load fallback are obsolete.</li>
+</ul>
+
+<h2 id="scores">Updated audit scores (movement vs. 2026-07-10)</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Criterion</th><th>Was</th><th>Now</th><th>Why it moved</th></tr></thead>
+<tbody>
+<tr><td>Code quality</td><td>7.5</td><td><strong>8</strong></td><td>user.ts unified onto the error pipeline; purchase pipeline exemplary; low-stock helper now duplicated ×3 (drag)</td></tr>
+<tr><td>UI/UX quality</td><td>7.5</td><td><strong>8.5</strong></td><td>Live nav + header search, profile page, real photos, Purchases workflow, responsiveness pass</td></tr>
+<tr><td>Backend architecture</td><td>8.5</td><td><strong>9</strong></td><td>Fail-closed webhook, money-safe refunds, atomic costing</td></tr>
+<tr><td>Database design</td><td>8.5</td><td><strong>9</strong></td><td>Partial unique index, full audit indexes, Purchase snapshots</td></tr>
+<tr><td>Security practices</td><td>7.5</td><td><strong>8.5</strong></td><td>All audit findings fixed and proven by <code>test_fixes.ts</code></td></tr>
+<tr><td>Functionality completeness</td><td>8</td><td><strong>9</strong></td><td>Reset, refunds, purchases, profile all landed</td></tr>
+<tr><td>Documentation quality</td><td>6.5</td><td><strong>7</strong></td><td>README fixed + .env.example; DB specs still deleted at HEAD (drag)</td></tr>
+<tr><td>Git usage</td><td>5</td><td><strong>5.5</strong></td><td>Two exemplary commits added; <code>server/dist</code> re-tracked (47 files) drags it right back down</td></tr>
+<tr><td>Clean &amp; maintainable</td><td>7</td><td><strong>7.5</strong></td><td>Regression suite added; 600-line files remain</td></tr>
+<tr><td>Scalability/prod-readiness</td><td>6</td><td><strong>6.5</strong></td><td>Secret fail-fast + .env.example; single-instance stores remain</td></tr>
+<tr><td>Project structure · Responsiveness</td><td>7 · 8</td><td><strong>7 · 8</strong></td><td>Unchanged</td></tr>
+<tr><td><strong>Mean</strong></td><td>7.25</td><td><strong>7.8</strong></td><td></td></tr>
+</tbody></table></div>
+
+<h2 id="still-open">Still open — the only labels that may be carried forward</h2>
+<div class="warn">Verified in current code (details in <code>00_ANALYSIS/security_review.html</code> §C and <code>audit/audit.html</code>): register email enumeration (deliberate UX tradeoff, <code>controllers/auth.ts:101</code>) · anonymous/spoofable view events (<code>routes/productEvents.ts</code>) · ≤15-min role staleness (JWT property) · hard user deletion · in-memory rate-limit store + in-process cron (single-instance) · implicit mock-mode selection · console-only logging · <code>server/dist</code> tracked in git · DB spec docs deleted at HEAD · 546 kB client bundle. <strong>Nothing else from the old analysis may be presented as an open issue.</strong></div>
+
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team: <span class="chip haya">Haya</span> Frontend ·
+      <span class="chip mahmod">Mahmod</span> Database · <span class="chip malik">Malik</span> Backend &amp; Architecture ·
+      Every claim cites a repository file path; the current code is the only ground truth.
+    </div>
+  </div>
+</div>
+<script>
+// Highlight the TOC entry of the section in view
+const links=[...document.querySelectorAll('.toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-10% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+</script>
+</body>
+</html>

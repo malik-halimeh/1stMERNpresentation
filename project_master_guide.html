@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Master Guide — OptiCart Analysis</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:900px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.92);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:26px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:-18px 0 26px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:38px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;
+       word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .st.gray{background:rgba(148,163,184,.14);color:var(--muted)}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:12px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 16px;border-top:1px solid var(--border)}
+
+  /* ── diagrams ── */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+           padding:18px;margin:16px 0;overflow-x:auto}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram .cap{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+
+  /* ── misc ── */
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);
+               font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:0 16px 60px}
+  }
+
+  /* ── print ── */
+  @media print{
+    .sidebar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary{color:#000 !important}
+    .qa,.codeblock,.note,.warn,tr{page-break-inside:avoid}
+    details{border-color:#999}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+  }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Analysis</div>
+    <p>Presentation deliverable · HEAD 175e68e</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#what" class="">1 · What OptiCart is</a></li>
+    <li><a href="#layout" class="">2 · Repository layout</a></li>
+    <li><a href="#lifecycle" class="">3 · The request lifecycle</a></li>
+    <li><a href="#auth" class="">4 · Authentication &amp; authorization</a></li>
+    <li><a href="#auth-rotation" class="h3">Rotation, grace, and reuse detection</a></li>
+    <li><a href="#auth-client" class="h3">Client side: single-flight silent refresh</a></li>
+    <li><a href="#auth-rbac" class="h3">RBAC</a></li>
+    <li><a href="#data" class="">5 · The data model — 14 collections</a></li>
+    <li><a href="#features" class="">6 · Feature workflows</a></li>
+    <li><a href="#f-catalog" class="h3">6.1 Catalog, search &amp; filters</a></li>
+    <li><a href="#f-detail" class="h3">6.2 Product detail &amp; variants</a></li>
+    <li><a href="#f-cart" class="h3">6.3 Cart &amp; wishlist (guest → auth merge)</a></li>
+    <li><a href="#f-checkout" class="h3">6.4 Checkout &amp; payments (Stripe, fail-closed)</a></li>
+    <li><a href="#f-orders" class="h3">6.5 Order lifecycle &amp; refunds</a></li>
+    <li><a href="#f-reviews" class="h3">6.6 Reviews (verified purchase)</a></li>
+    <li><a href="#f-lowstock" class="h3">6.7 Low-stock alerts</a></li>
+    <li><a href="#f-purchases" class="h3">6.8 Purchases &amp; weighted-average costing NEW</a></li>
+    <li><a href="#f-analytics" class="h3">6.9 Analytics, recommendations, notifications, email</a></li>
+    <li><a href="#errors" class="">7 · Error handling pipeline</a></li>
+    <li><a href="#frontend" class="">8 · Frontend architecture</a></li>
+    <li><a href="#prod" class="">9 · Deployment readiness — honest scorecard</a></li>
+    <li><a href="#sw" class="">10 · Strengths &amp; weaknesses at a glance</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>All documents</h4>
+    <a href="00_ANALYSIS/analysis_refresh.html" class="">Analysis Refresh</a>
+    <a href="project_master_guide.html" class="current">Project Master Guide</a>
+    <a href="manuals/haya_manual.html" class="">Haya</a>
+    <a href="manuals/malik_manual.html" class="">Malik</a>
+    <a href="manuals/mahmod_manual.html" class="">Mahmod</a>
+    <a href="diagrams/diagrams.html" class="">Diagram Gallery</a>
+    <a href="questions/question_bank.html" class="">Question Bank</a>
+    <a href="audit/audit.html" class="">Audit</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Project Master Guide</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">The OptiCart encyclopedia: architecture, every feature workflow, routing, auth, error handling, database design, deployment readiness, strengths and weaknesses — all traceable to current code.</p>
+<div class="note"><strong>What this file is.</strong> The single place that explains the whole system end to end — what OptiCart is, how a request travels through it, how auth works, how the 14 collections relate, how every feature is wired, and what is production-ready versus single-instance. Read it top to bottom once; after that use the sidebar. Every claim points at a real file. On any status conflict, trust <code>00_ANALYSIS/analysis_refresh.html</code> over the older docs, and the code over both.</div>
+
+<h2 id="what">1 · What OptiCart is</h2>
+<p><strong>OptiCart Appliances</strong> is a full-stack e-commerce application for home appliances: a customer storefront plus a role-scoped admin back office, built as a TypeScript monorepo. A shopper browses a catalog, filters and searches, builds a cart (even as a guest), checks out through Stripe, tracks orders through a seven-state lifecycle, and reviews what they bought. Staff manage products, inventory, orders, refunds, coupons, purchases, users, and analytics — every privileged action written to an append-only audit log.</p>
+<div class="kv">
+<dt>Architecture</dt><dd>Two-package npm monorepo: <code>client/</code> (React SPA) + <code>server/</code> (Express API), one MongoDB database.</dd>
+<dt>Backend</dt><dd>Node + Express 4, TypeScript, Mongoose 8, JWT auth, Stripe, Cloudinary, node-cron, nodemailer, Zod.</dd>
+<dt>Frontend</dt><dd>React 19, Vite, React Router 7, Context API, Axios, Tailwind 3.4.</dd>
+<dt>Money</dt><dd>Everything stored in integer <strong>cents</strong> — no floats touch money anywhere.</dd>
+<dt>Roles</dt><dd><code>customer</code>, <code>inventory_manager</code>, <code>super_admin</code> — enforced on the server, mirrored by client route guards.</dd>
+</div>
+<div class="note"><strong>Demo credentials</strong> (from <code>README.md</code> / <code>server/seed.ts</code>): customer <code>customer@opticart.dev / Customer123!</code> · manager <code>manager@opticart.dev / Manager123!</code> · admin <code>admin@opticart.dev / Admin123!</code>.</div>
+
+<h2 id="layout">2 · Repository layout</h2>
+<div class="codeblock"><div class="path">project root</div><pre><code>OptiCart/
+├─ client/                 React 19 + Vite SPA
+│  └─ src/
+│     ├─ context/          AuthContext · ShopContext · ToastContext
+│     ├─ services/api.ts   single Axios instance + refresh interceptor
+│     ├─ components/       layout/ (Storefront, Admin) · ui/ (DataTable, SearchBox, …)
+│     ├─ pages/            storefront pages + pages/admin/*
+│     └─ App.tsx           all routes + ProtectedRoute guards
+├─ server/                 Express + TypeScript API
+│  └─ src/
+│     ├─ server.ts         boot: env → DB → middleware → routes → cron
+│     ├─ config/           db, cloudinary, stripe, env
+│     ├─ middleware/        auth, rateLimiter, errorHandler, upload, validate
+│     ├─ models/           14 Mongoose models
+│     ├─ controllers/      one per domain
+│     ├─ routes/           one router per domain, mounted under /api/*
+│     ├─ services/         scheduler (cron), mailer, recommendation
+│     ├─ validators/       Zod schemas (allowlists)
+│     └─ seed.ts           idempotent demo data
+├─ OptiCart_Jira_Import_v2.csv   the sprint board (11 epics, 40 sub-tasks)
+└─ README.md</code></pre></div>
+<p>The split maps directly to the team: <span class="chip haya">Haya</span> owns <code>client/</code>, <span class="chip mahmod">Mahmod</span> owns <code>server/models</code> + index strategy, <span class="chip malik">Malik</span> owns the rest of <code>server/</code> and the overall architecture.</p>
+
+<h2 id="lifecycle">3 · The request lifecycle</h2>
+<p><strong>Boot order matters</strong> (<code>server/src/server.ts</code>): load env → connect Mongo (with retry) → <code>syncIndexes()</code> → register middleware → mount routers → start cron → listen. The middleware order is deliberate:</p>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>Middleware</th><th>Why it sits here</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><code>helmet()</code></td><td>Security headers before anything runs.</td></tr>
+<tr><td>2</td><td><code>cors()</code> (credentials, allow-list origin)</td><td>Cookies cross-origin need explicit origin + credentials.</td></tr>
+<tr><td>3</td><td><strong><code>express.raw()</code> on <code>/api/orders/webhook</code></strong></td><td><span class="st ok">Critical</span> Stripe signature needs the <em>unparsed</em> body. Mounted <em>before</em> the JSON parser so the raw bytes survive.</td></tr>
+<tr><td>4</td><td><code>express.json()</code> + <code>cookie-parser</code></td><td>Parse everything else; read the refresh cookie.</td></tr>
+<tr><td>5</td><td><code>morgan('dev')</code></td><td>Request logging (dev format — a noted prod gap).</td></tr>
+<tr><td>6</td><td>global rate limiter (1000 / 15 min)</td><td>Blanket abuse ceiling; auth routes get a stricter limiter on top.</td></tr>
+<tr><td>7</td><td><code>/api/*</code> routers</td><td>The 16 domain routers.</td></tr>
+<tr><td>8</td><td>404 handler → <code>errorHandler</code></td><td>Everything funnels into one JSON error envelope (see §7).</td></tr>
+</tbody></table></div>
+<div class="warn"><strong>The #1 thing to be able to explain:</strong> why the webhook raw-body mount comes <em>before</em> <code>express.json()</code>. If JSON parsed first, the raw bytes are gone, <code>stripe.webhooks.constructEvent</code> can't verify the signature, and you'd be forced to trust unverified input. This was a real bug in an earlier version; it is fixed and fail-closed now (<code>controllers/order.ts stripeWebhook</code>).</div>
+
+<h2 id="auth">4 · Authentication &amp; authorization</h2>
+<p>This is the most sophisticated part of the system and the most likely to be probed. Two tokens, two very different lifetimes and storage models:</p>
+<div class="tablewrap"><table>
+<thead><tr><th></th><th>Access token</th><th>Refresh token</th></tr></thead>
+<tbody>
+<tr><td>Type</td><td>JWT (signed, stateless)</td><td>Opaque random string (stateful)</td></tr>
+<tr><td>Lifetime</td><td>15 minutes</td><td>7 days</td></tr>
+<tr><td>Stored where</td><td>Client <strong>memory only</strong> (never localStorage)</td><td><strong>httpOnly</strong> cookie, <code>SameSite=Strict</code></td></tr>
+<tr><td>In the DB?</td><td>No</td><td>Only its <strong>SHA-256 hash</strong></td></tr>
+<tr><td>Carries</td><td>userId + role → cheap authz</td><td>Nothing readable — just an identifier to rotate</td></tr>
+</tbody></table></div>
+<h3 id="auth-rotation">Rotation, grace, and reuse detection</h3>
+<p>On every <code>POST /api/auth/refresh</code> the server does a single atomic <code>findOneAndUpdate</code>: match the current hash, write a new hash, remember the previous hash with a 30-second grace window (<code>controllers/auth.ts</code>). Three outcomes:</p>
+<ul>
+<li><strong>Normal rotation</strong> — the one request that matches the live hash wins, gets a fresh access token and a rotated cookie.</li>
+<li><strong>Concurrent tab within grace</strong> — a second request arriving within 30s matches <code>prevRefreshTokenHash</code>; it gets a new access token but does <em>not</em> re-rotate. This is why two open tabs don't fight each other.</li>
+<li><strong>Stale token outside grace (theft signal)</strong> — someone replays an old token. The server nulls <em>all</em> of that user's refresh hashes and returns <code>403 AUTH_SESSION_COMPROMISED</code>, forcing a full re-login. That's reuse detection.</li>
+</ul>
+<h3 id="auth-client">Client side: single-flight silent refresh</h3>
+<p>One shared Axios instance (<code>client/src/services/api.ts</code>). When any request 401s, a response interceptor fires a single refresh call — a module-level promise guarantees that ten simultaneous 401s trigger <em>one</em> refresh, not ten (single-flight). Queued requests await that one promise, then replay. The access token lives only in memory, so a page reload starts with no token and silently refreshes on mount from the httpOnly cookie.</p>
+<h3 id="auth-rbac">RBAC</h3>
+<p><code>authenticate</code> verifies the JWT and attaches <code>req.user</code>; <code>authorize(...roles)</code> gates by role (<code>middleware/auth.ts</code>). Applied per route file — e.g. product writes require <code>inventory_manager</code> or <code>super_admin</code>; user management requires <code>super_admin</code>. The client mirrors this with <code>&lt;ProtectedRoute&gt;</code> in <code>App.tsx</code>, but the client guard is UX only — the server is the real boundary.</p>
+<div class="warn"><strong>Honest limitation:</strong> role changes take up to 15 minutes to bite, because the role rides inside the access token and isn't re-checked against the DB until the token expires and refreshes. This is an inherent property of stateless access tokens, not a bug — say so plainly.</div>
+
+<h2 id="data">5 · The data model — 14 collections</h2>
+<p>All under <code>server/src/models/</code>. Money is always integer cents. Timestamps everywhere. Snapshots (denormalized copies) are used where a later edit to the source must <em>not</em> rewrite history.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Collection</th><th>Purpose</th><th>Notable design</th></tr></thead>
+<tbody>
+<tr><td><code>User</code></td><td>Accounts, roles, addresses, refresh hashes, reset code</td><td>Embedded addresses; refresh + prev hash; reset code fields; <code>bcrypt</code> cost 12</td></tr>
+<tr><td><code>Product</code></td><td>Catalog item with variants</td><td>Embedded variant subdocs (own SKU/price/stock); denormalized <code>ratingAvg</code>/<code>reviewCount</code>; <code>costPriceCents</code> for margin</td></tr>
+<tr><td><code>Category</code></td><td>2-level tree</td><td>Self-reference via <code>parent</code>; unique <code>slug</code></td></tr>
+<tr><td><code>Cart</code></td><td>One active cart per user</td><td>References products; stock re-validated on read</td></tr>
+<tr><td><code>Wishlist</code></td><td>Saved items</td><td>Guest version lives in localStorage, merged on login</td></tr>
+<tr><td><code>Order</code></td><td>Placed order + lifecycle</td><td><strong>Line-item snapshots</strong> (name/price frozen); embedded refund subdoc; status history</td></tr>
+<tr><td><code>Coupon</code></td><td>Discounts</td><td>Global + per-user usage caps; validated again at checkout</td></tr>
+<tr><td><code>Review</code></td><td>Verified-purchase ratings</td><td>Unique <code>(user, product)</code> index; transaction recomputes product rating</td></tr>
+<tr><td><code>LowStockAlert</code></td><td>Reorder signals</td><td><strong>Partial</strong> unique index (active-only) — see §6.7</td></tr>
+<tr><td><code>AuditLog</code></td><td>Append-only privileged-action log</td><td>9 action types; indexed on actorId/actionType/targetEntityId</td></tr>
+<tr><td><code>Notification</code></td><td>In-app bell</td><td>Per-user, unread counter</td></tr>
+<tr><td><code>ProductEvent</code></td><td>Anonymous view stream</td><td>180-day <strong>TTL index</strong>; feeds the recommender</td></tr>
+<tr><td><code>ProductRecommendation</code></td><td>Nightly co-occurrence cache</td><td>Top-10 per product; read-only at request time</td></tr>
+<tr><td><code>Purchase</code></td><td><span class="st info">NEW</span> Procurement / restock records</td><td>Snapshots product + buyer name; drives weighted-average costing (§6.8)</td></tr>
+</tbody></table></div>
+<p>See <code>manuals/mahmod_manual.html</code> for the field-by-field <em>why</em> of every model, and <code>diagrams/diagrams.html</code> for the ERD.</p>
+
+<h2 id="features">6 · Feature workflows</h2>
+
+<h3 id="f-catalog">6.1 Catalog, search &amp; filters</h3>
+<p><code>GET /api/products</code> (<code>controllers/product.ts</code>) builds a Mongo query from allow-listed params — category slug, price range, rating, text search, sort, page — and returns items plus a <code>meta</code> pagination block. The storefront header search is a submit form that pushes <code>?search=</code> into the URL; <code>ProductList.tsx</code> reads the param (no live-suggestion dropdown — that was an earlier iteration). A text index backs the search.</p>
+
+<h3 id="f-detail">6.2 Product detail &amp; variants</h3>
+<p>A product carries embedded <strong>variants</strong>, each with its own SKU, price, and stock. <code>ProductDetail.tsx</code> lets the shopper pick a variant (updating price, gallery, and stock state) and fires a batched anonymous view event. Add-to-cart always targets a specific variant SKU, never the product as a whole.</p>
+
+<h3 id="f-cart">6.3 Cart &amp; wishlist (guest → auth merge)</h3>
+<p>Guests get a cart/wishlist in <code>localStorage</code> (<code>utils/guestCart.ts</code>). On login, the client merges the local cart into the server cart, then clears local. The server re-validates stock on every cart read, so a cart can legitimately shrink between sessions if stock dropped. This merge-on-login pattern is worth calling out — it's why "add to cart before signing in" just works.</p>
+
+<h3 id="f-checkout">6.4 Checkout &amp; payments (Stripe, fail-closed)</h3>
+<ol>
+<li><code>createCheckoutSession</code> (<code>controllers/order.ts</code>) re-prices the cart server-side, <strong>re-validates the coupon from scratch</strong> (existence, active, expiry, min-order, global + per-user caps — the client's preview is never trusted), and creates a Stripe PaymentIntent (or a mock in keyless dev).</li>
+<li>Stripe calls <code>POST /api/orders/webhook</code> with the raw body. Verification is <strong>fail-closed</strong>: a missing/invalid signature is a 400, not a fallback.</li>
+<li>On <code>payment_intent.succeeded</code> the handler decrements each variant's stock with an <strong>atomic conditional <code>$inc</code></strong> guarded by <code>stock ≥ qty</code>; a lost race clamps to 0 and logs a warning instead of overselling.</li>
+<li>The order is created from server-side prices with line-item snapshots, a purchase event is recorded (this one <em>does</em> carry userId, feeding recommendations), and a confirmation email fires.</li>
+</ol>
+
+<h3 id="f-orders">6.5 Order lifecycle &amp; refunds</h3>
+<p>Orders move through a seven-state machine; <code>updateOrderStatus</code> enforces legal transitions and records a reason. Cancelling/refunding calls <code>stripe.refunds.create</code> (mock id in keyless mode) <em>before</em> persisting, populates the embedded refund subdoc, writes a dedicated <code>refund_decision</code> audit entry, and aborts with <code>502 REFUND_FAILED</code> if Stripe rejects — money movement never lags the status.</p>
+
+<h3 id="f-reviews">6.6 Reviews (verified purchase)</h3>
+<p>Only a delivered purchase can review a product (<code>controllers/review.ts</code>). A unique <code>(user, product)</code> index enforces one review each; creating/editing/deleting runs inside a transaction that recomputes the product's denormalized <code>ratingAvg</code>/<code>reviewCount</code>, so the product card never has to aggregate reviews at read time. Client-supplied image URLs are ignored (no review upload pipeline exists).</p>
+
+<h3 id="f-lowstock">6.7 Low-stock alerts</h3>
+<p>When a stock write crosses the threshold, a duplicate-safe alert is created. The interesting bit is the index: a <strong>partial</strong> unique index on <code>(productId, variantSku)</code> filtered to <code>status:'active'</code> (<code>models/LowStockAlert.ts</code>). That allows exactly one <em>active</em> alert per variant while still permitting many historical <em>resolved</em> ones — an earlier full unique index wrongly blocked the second resolve. <code>syncIndexes()</code> at boot drops the stale index.</p>
+
+<h3 id="f-purchases">6.8 Purchases &amp; weighted-average costing <span class="st info">NEW</span></h3>
+<p>The newest domain (<code>controllers/purchase.ts</code>, <code>models/Purchase.ts</code>). Recording a restock does two things in <strong>one atomic aggregation-pipeline <code>findOneAndUpdate</code></strong>: it adds the quantity to stock <em>and</em> recomputes the product's weighted-average <code>costPriceCents</code> using a <code>$map</code> over variants. The old and new cost blend by quantity, so margins stay honest as buy-prices drift. If the <code>Purchase.create</code> that follows fails, a compensating update reverts the stock/cost change; deleting a purchase reverts too, refusing (409) if that would drive stock negative. Every purchase writes a <code>stock_purchase</code> audit entry.</p>
+
+<h3 id="f-analytics">6.9 Analytics, recommendations, notifications, email</h3>
+<ul>
+<li><strong>Analytics</strong> (<code>controllers/analytics.ts</code>) — 5 aggregation series over delivered orders/registrations, now including purchase-spend; rendered as cards + charts in <code>admin/Analytics.tsx</code>.</li>
+<li><strong>Recommendations</strong> — a nightly node-cron job computes recency-weighted product co-occurrence and upserts top-10 lists (<code>services/scheduler.ts</code>); request-time reads are cache-only, with a cold-start fallback.</li>
+<li><strong>Notifications</strong> — per-user bell with unread count and mark-all-read (<code>ui/NotificationBell.tsx</code>).</li>
+<li><strong>Email</strong> — <code>services/mailer.ts</code> sends via SMTP if configured, else logs to console; 5 triggers (welcome/verify, reset, order confirmation, status change, low stock).</li>
+</ul>
+
+<h2 id="errors">7 · Error handling pipeline</h2>
+<p>One shape for every failure. Controllers throw a typed <code>AppError(message, statusCode, code)</code> or call <code>next(err)</code>; a single <code>errorHandler</code> (<code>middleware/errorHandler.ts</code>) turns anything into <code>{ error: { message, code } }</code> with the right status. Zod validation failures become 400s with field detail; unknown errors become a generic 500 that never leaks internals. This is why the whole API is predictable to consume — and why <code>controllers/user.ts</code> being retrofitted onto this pipeline mattered (it used to return raw error objects).</p>
+<div class="codeblock"><div class="path">shape of every error response</div><pre><code>{ "error": { "message": "Coupon has expired", "code": "COUPON_EXPIRED" } }</code></pre></div>
+
+<h2 id="frontend">8 · Frontend architecture</h2>
+<ul>
+<li><strong>Three contexts.</strong> <code>AuthContext</code> (user + token in memory + silent refresh), <code>ShopContext</code> (cart/wishlist, guest merge), <code>ToastContext</code> (notifications). Note the README once called <code>ShopContext</code> "CartContext" — that drift is fixed.</li>
+<li><strong>Routing.</strong> React Router 7 in <code>App.tsx</code>; <code>&lt;ProtectedRoute&gt;</code> gates admin and account routes by role. After sign-in, customers land on the storefront and staff on <code>/admin/dashboard</code>; redirects back to auth pages are ignored so nobody is stranded on the login screen.</li>
+<li><strong>Two layouts.</strong> <code>StorefrontLayout</code> (two-row header, live category nav by slug, URL-synced search, footer with contact + social SVGs) and <code>AdminLayout</code> (role-scoped collapsible sidebar).</li>
+<li><strong>Reusable UI.</strong> <code>DataTable</code>, <code>SearchBox</code> (used by 7 admin pages), modals, skeleton loaders. Tailwind design tokens defined once in <code>tailwind.config</code>.</li>
+</ul>
+
+<h2 id="prod">9 · Deployment readiness — honest scorecard</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Area</th><th>State</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Secrets</td><td><span class="st ok">Hardened</span></td><td>Production refuses to boot without <code>JWT_ACCESS_SECRET</code>; dev fallback warns loudly (<code>utils/tokens.ts</code>).</td></tr>
+<tr><td>Payments</td><td><span class="st ok">Hardened</span></td><td>Fail-closed webhook, atomic stock, real refunds.</td></tr>
+<tr><td>Data integrity</td><td><span class="st ok">Strong</span></td><td>Atomic costing, partial unique indexes, transactions on reviews, append-only audit.</td></tr>
+<tr><td>Rate limiting</td><td><span class="st warn">Single-instance</span></td><td>In-memory store — correct for one process, needs Redis to scale horizontally.</td></tr>
+<tr><td>Background jobs</td><td><span class="st warn">Single-instance</span></td><td>In-process node-cron — two instances would double-run the nightly job.</td></tr>
+<tr><td>Logging</td><td><span class="st warn">Dev-only</span></td><td><code>morgan('dev')</code>; no structured/aggregated logging.</td></tr>
+<tr><td>CI/CD &amp; Docker</td><td><span class="st bad">Absent</span></td><td>No pipeline, no container.</td></tr>
+<tr><td>Git hygiene</td><td><span class="st bad">Drag</span></td><td><code>server/dist</code> is tracked (47 build files); the DB spec docs were deleted at HEAD.</td></tr>
+<tr><td>Bundle</td><td><span class="st warn">546 kB</span></td><td>Client bundle unsplit; code-splitting would help.</td></tr>
+</tbody></table></div>
+
+<h2 id="sw">10 · Strengths &amp; weaknesses at a glance</h2>
+<p><strong>Strengths:</strong> refresh rotation with reuse detection; fail-closed payments; atomic money math (stock + weighted-average cost); one clean error envelope; append-only audit across 9 action types; cents-only money; verified-purchase reviews with denormalized ratings; guest→auth merge; thoughtful index strategy (partial unique, TTL, text, compound). <em>Full detail in <code>audit/audit.html</code>.</em></p>
+<p><strong>Weaknesses (own them, don't hide them):</strong> single-instance rate-limit + cron; deliberate register email enumeration (UX tradeoff); anonymous spoofable view events; ≤15-min role staleness; hard user deletion; dev-only logging; no CI/Docker; <code>server/dist</code> tracked; 546 kB bundle; some 600-line controllers. None of these is a correctness bug in the happy path — they are scaling and hygiene items, and every one of them has a one-sentence answer ready in the question bank.</p>
+
+<div class="note"><strong>Where to go next:</strong> <code>manuals/{malik,haya,mahmod}_manual.html</code> for role-deep material · <code>questions/question_bank.html</code> for 120+ rehearsed answers · <code>diagrams/diagrams.html</code> for the visuals · <code>audit/audit.html</code> for the candid self-assessment.</div>
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team: <span class="chip haya">Haya</span> Frontend ·
+      <span class="chip mahmod">Mahmod</span> Database · <span class="chip malik">Malik</span> Backend &amp; Architecture ·
+      Every claim cites a repository file path; the current code is the only ground truth.
+    </div>
+  </div>
+</div>
+<script>
+// Highlight the TOC entry of the section in view
+const links=[...document.querySelectorAll('.toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-10% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+%% OptiCart — system architecture (layered)
+%% Render: https://mermaid.live  or  mmdc -i architecture.mmd -o architecture.svg
+flowchart TB
+  subgraph Client["Client — React 19 SPA (Vite)"]
+    UI["Pages + UI library"]
+    CTX["Contexts: Auth · Shop · Toast"]
+    AX["services/api.ts — one Axios instance + refresh interceptor"]
+    UI --> CTX --> AX
+  end
+
+  subgraph Server["Server — Express + TypeScript"]
+    MW["Middleware chain: helmet · cors · raw-webhook · json · rateLimit"]
+    RT["16 routers under /api/*"]
+    CTRL["Controllers (domain logic)"]
+    SVC["Services: scheduler(cron) · mailer · recommendation"]
+    ERR["errorHandler → { error:{message,code} }"]
+    MW --> RT --> CTRL --> ERR
+    CTRL --> SVC
+  end
+
+  subgraph Data["Data & external"]
+    DB[("MongoDB — 14 collections")]
+    STRIPE["Stripe (PaymentIntents + webhook)"]
+    CLOUD["Cloudinary (images)"]
+    SMTP["SMTP / console mailer"]
+  end
+
+  AX -- "HTTPS + httpOnly refresh cookie" --> MW
+  CTRL --> DB
+  CTRL --> STRIPE
+  CTRL --> CLOUD
+  SVC --> SMTP
+  STRIPE -- "webhook (raw body, fail-closed)" --> MW

@@ -1,0 +1,13 @@
+%% OptiCart — roles & what each may do (server-enforced)
+flowchart TB
+  subgraph Roles
+    C[customer]
+    IM[inventory_manager]
+    SA[super_admin]
+  end
+  C --> Cperms["browse · cart/wishlist · checkout · own orders · review delivered · profile"]
+  IM --> IMperms["all customer +\nproduct CRUD · category CRUD ·\norder fulfillment · coupons ·\nlow-stock · purchases"]
+  SA --> SAperms["all manager +\nuser & role management ·\nanalytics · audit log viewer"]
+  Note1["authenticate -> req.user\nauthorize(...roles) gates each route\nclient ProtectedRoute mirrors (UX only)"]
+  IM -. inherits .-> C
+  SA -. inherits .-> IM

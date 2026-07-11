@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mahmod — Database Manual — OptiCart Analysis</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:900px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.92);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:26px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:-18px 0 26px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:38px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;
+       word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .st.gray{background:rgba(148,163,184,.14);color:var(--muted)}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:12px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 16px;border-top:1px solid var(--border)}
+
+  /* ── diagrams ── */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+           padding:18px;margin:16px 0;overflow-x:auto}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram .cap{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+
+  /* ── misc ── */
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);
+               font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:0 16px 60px}
+  }
+
+  /* ── print ── */
+  @media print{
+    .sidebar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary{color:#000 !important}
+    .qa,.codeblock,.note,.warn,tr{page-break-inside:avoid}
+    details{border-color:#999}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+  }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Analysis</div>
+    <p>Presentation deliverable · HEAD 175e68e</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#scope" class="">1 · Your domain in one breath</a></li>
+    <li><a href="#concepts" class="">2 · Core concepts you must own</a></li>
+    <li><a href="#c-embed" class="h3">Embedding vs referencing</a></li>
+    <li><a href="#c-snapshot" class="h3">Snapshots for history</a></li>
+    <li><a href="#c-denorm" class="h3">Denormalization with hooks</a></li>
+    <li><a href="#c-indexes" class="h3">Indexes as design, not afterthought</a></li>
+    <li><a href="#c-money" class="h3">Money as integer cents</a></li>
+    <li><a href="#trace" class="">3 · End-to-end trace: a review is written</a></li>
+    <li><a href="#models" class="">4 · The 14 models — questions &amp; model answers (25+)</a></li>
+    <li><a href="#curveballs" class="">5 · Curveballs (10)</a></li>
+    <li><a href="#learned" class="">6 · A new concept I learned</a></li>
+    <li><a href="#hard" class="">7 · Still challenging / honest gaps</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>All documents</h4>
+    <a href="../00_ANALYSIS/analysis_refresh.html" class="">Analysis Refresh</a>
+    <a href="../project_master_guide.html" class="">Project Master Guide</a>
+    <a href="../manuals/haya_manual.html" class="">Haya</a>
+    <a href="../manuals/malik_manual.html" class="">Malik</a>
+    <a href="../manuals/mahmod_manual.html" class="current">Mahmod</a>
+    <a href="../diagrams/diagrams.html" class="">Diagram Gallery</a>
+    <a href="../questions/question_bank.html" class="">Question Bank</a>
+    <a href="../audit/audit.html" class="">Audit</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Mahmod — Database Manual</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">All 14 models field-by-field with the WHY: embedding vs referencing, refs & virtual population, indexes and the queries they serve, hooks, unique constraints, cents-based money, ERD narrative.</p>
+<div class="note"><span class="chip mahmod">Mahmod</span> <strong>Database.</strong> Your speaking kit for the 14 Mongoose models, the index strategy, and the <em>why</em> behind every embedding-vs-referencing call. Built so you can answer out of order. Every claim points at a file under <code>server/src/models/</code>. Seven sections: your domain, core concepts, one end-to-end trace, 25+ Q&amp;A, 10 curveballs, what you learned, what's still hard.</div>
+
+<h2 id="scope">1 · Your domain in one breath</h2>
+<p>You own the data model: all 14 schemas, the index strategy that makes queries fast and constraints safe, the hooks that keep denormalized fields honest, and the seed script. When someone asks "why is it shaped like that?", that's your question.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Concern</th><th>File(s)</th></tr></thead>
+<tbody>
+<tr><td>Schemas</td><td><code>server/src/models/*.ts</code> (14 files)</td></tr>
+<tr><td>Index sync</td><td><code>server.ts</code> (<code>syncIndexes()</code> at boot)</td></tr>
+<tr><td>Seed data</td><td><code>server/seed.ts</code></td></tr>
+<tr><td>ERD</td><td><code>diagrams/erd.mmd</code> · <code>diagrams/diagrams.html</code></td></tr>
+</tbody></table></div>
+
+<h2 id="concepts">2 · Core concepts you must own</h2>
+<h3 id="c-embed">Embedding vs referencing</h3>
+<p>The rule I applied: <strong>embed what is owned and read together, reference what is shared and edited independently.</strong> Variants live <em>inside</em> Product (they have no life of their own). Addresses live inside User. But Order references User and Product, because an order isn't part of a product's identity and vice-versa.</p>
+<h3 id="c-snapshot">Snapshots for history</h3>
+<p>Orders store a <strong>copy</strong> of each line's product name and price at purchase time; Purchases snapshot the product name and buyer name. If a product is renamed or repriced later, past orders must not silently change — a snapshot freezes the truth.</p>
+<h3 id="c-denorm">Denormalization with hooks</h3>
+<p><code>Product.ratingAvg</code> and <code>reviewCount</code> are denormalized so a product card never aggregates reviews at read time. A review transaction recomputes them on every create/edit/delete — the write pays the cost so the read is cheap.</p>
+<h3 id="c-indexes">Indexes as design, not afterthought</h3>
+<p>Unique email; unique <code>(user, product)</code> for reviews; unique category <code>slug</code>; a <strong>partial</strong> unique index on active low-stock alerts; a 180-day <strong>TTL</strong> index on product events; a <strong>text</strong> index for search; compound indexes on the audit log. Each one exists to serve a specific query or enforce a specific rule.</p>
+<h3 id="c-money">Money as integer cents</h3>
+<p>Every monetary field is an integer count of cents. No <code>Number</code> dollars, ever — floats lose precision and money can't afford that.</p>
+
+<h2 id="trace">3 · End-to-end trace: a review is written</h2>
+<ol>
+<li>Client posts a review for a delivered product. The controller confirms a delivered Order references that product for this user (verified-purchase rule).</li>
+<li>The unique <code>(user, product)</code> index guarantees at most one review per person — a duplicate throws E11000 instead of creating a second.</li>
+<li>Inside a transaction, the Review is written and the parent Product's <code>ratingAvg</code>/<code>reviewCount</code> are recomputed, so the two never disagree.</li>
+<li>The product card elsewhere reads those denormalized fields directly — no aggregation at request time.</li>
+</ol>
+
+<h2 id="models">4 · The 14 models — questions &amp; model answers (25+)</h2>
+<div class="qa"><div class="q">Q1 · Why are variants embedded in Product instead of their own collection?</div>A variant has no meaning without its product and is always read with it. Embedding means one query loads the product and all its variants, with atomic updates. A separate collection would add joins for no benefit.</div>
+<div class="qa"><div class="q">Q2 · Why are addresses embedded in User?</div>Addresses are owned by one user and read with the profile. Embedding keeps them together and avoids a lookup for something that's never shared.</div>
+<div class="qa"><div class="q">Q3 · Why does Order reference Product but snapshot its name and price?</div>Reference for identity (which product), snapshot for history (what it was called and cost at purchase). Renaming or repricing a product must never rewrite old orders.</div>
+<div class="qa"><div class="q">Q4 · What's denormalized on Product and why?</div><code>ratingAvg</code> and <code>reviewCount</code>. So listing pages don't aggregate the Review collection on every render — the read is O(1) instead of a group-by.</div>
+<div class="qa"><div class="q">Q5 · How do you keep those denormalized ratings correct?</div>A transaction on every review create/edit/delete recomputes them from the Review set. The write is slightly heavier so reads stay cheap and consistent.</div>
+<div class="qa"><div class="q">Q6 · Why a unique index on (user, product) for reviews?</div>To enforce "one review per person per product" at the database level — not in app code that a race could slip past. A second attempt throws a duplicate-key error.</div>
+<div class="qa"><div class="q">Q7 · Explain the partial unique index on LowStockAlert.</div>It's unique on <code>(productId, variantSku)</code> but <em>only where status is 'active'</em>. So a variant can have exactly one active alert yet many historical resolved ones. A plain unique index wrongly blocked the second resolve.</div>
+<div class="qa"><div class="q">Q8 · What's a TTL index and where do you use one?</div>A TTL index auto-deletes documents after an age. ProductEvents carry a 180-day TTL so the view stream self-prunes — no cron job to clean it, and the collection can't grow unbounded.</div>
+<div class="qa"><div class="q">Q9 · How does text search work?</div>A text index over product name/description backs <code>GET /products?search=</code>. Mongo tokenises and ranks matches, so search doesn't scan every document.</div>
+<div class="qa"><div class="q">Q10 · Why compound indexes on the audit log?</div>The log is queried by actor, by action type, and by target entity. Indexes on those fields keep the "show me everything this admin did" query fast even as the log grows append-only.</div>
+<div class="qa"><div class="q">Q11 · How is the category tree modeled?</div>Self-referencing: each Category has an optional <code>parent</code>. Two levels in practice, with a unique <code>slug</code> for clean URLs and slug-based filtering.</div>
+<div class="qa"><div class="q">Q12 · Where do refresh tokens live in the schema?</div>On User, as SHA-256 hashes — current and previous — never the raw token. That supports rotation and reuse detection without storing anything replayable.</div>
+<div class="qa"><div class="q">Q13 · What does the Purchase model store and why the snapshots?</div>Product id + quantity + unit cost, plus snapshots of the product name and the buyer's name. Procurement records must stay readable even if the product or user is later changed or removed.</div>
+<div class="qa"><div class="q">Q14 · What is weighted-average cost and where does it live?</div><code>Product.costPriceCents</code>. When stock is purchased, the cost blends old and new by quantity, computed atomically in the purchase update. It's how margin stays accurate as buy-prices move.</div>
+<div class="qa"><div class="q">Q15 · Why store money as cents in the schema?</div>Integers are exact; floating dollars drift. Every price/total/cost field is an integer number of cents.</div>
+<div class="qa"><div class="q">Q16 · How is one-cart-per-user enforced?</div>Cart is keyed to the user; there's one active cart document per account. Items reference products and are stock-validated on read.</div>
+<div class="qa"><div class="q">Q17 · What are the 9 audit action types for?</div>Each privileged operation — role change, status change, refund_decision, stock_purchase, moderation, etc. — has a type so the log is filterable and every sensitive action is attributable.</div>
+<div class="qa"><div class="q">Q18 · How does the Order status history work?</div>The order keeps its current state plus a history of transitions with reasons and timestamps, so fulfillment is auditable end to end.</div>
+<div class="qa"><div class="q">Q19 · Why is refund an embedded subdoc on Order?</div>A refund belongs to exactly one order and is always read with it. Embedding keeps the refund amount, id, and reason next to the order they describe.</div>
+<div class="qa"><div class="q">Q20 · How does the seed script avoid duplicates?</div>It's idempotent — it upserts known fixtures (three role accounts, products with variants, orders across statuses, reviews, coupons) so re-running it doesn't pile up duplicates.</div>
+<div class="qa"><div class="q">Q21 · What's the Notification model shape?</div>Per-user documents with a type, payload, and read flag, powering the unread count and mark-all-read on the bell.</div>
+<div class="qa"><div class="q">Q22 · How does ProductRecommendation store results?</div>Per product, a cached top-10 list produced nightly. Reads are pure cache hits; nothing is computed at request time.</div>
+<div class="qa"><div class="q">Q23 · Why syncIndexes at boot?</div>It reconciles live indexes with the schema definition — that's how the old full unique index on LowStockAlert was replaced by the partial one without a manual migration.</div>
+<div class="qa"><div class="q">Q24 · How is bcrypt used and at what cost?</div>Passwords are bcrypt-hashed at cost 12 before save via a pre-save hook, so a plaintext password never touches the database.</div>
+<div class="qa"><div class="q">Q25 · Do you use transactions anywhere?</div>Yes — the review flow wraps the Review write and the Product rating recompute in a transaction so they commit together or not at all.</div>
+<div class="qa"><div class="q">Q26 · How many collections total, and what changed recently?</div>14. The newest is Purchase (procurement/costing); it took the count from 13 to 14 and added the <code>stock_purchase</code> audit type.</div>
+
+<h2 id="curveballs">5 · Curveballs (10)</h2>
+<div class="qa"><div class="q">C1 · A product has 500 variants. Is embedding still right?</div>At that scale the 16 MB document limit and per-update rewrite cost start to hurt. For a few dozen variants embedding is ideal; for hundreds I'd move variants to their own collection referenced by product. It's a threshold decision, not a religion.</div>
+<div class="qa"><div class="q">C2 · Two admins resolve the same low-stock alert simultaneously. What happens?</div>Both try to flip status to resolved; the update is idempotent (resolving a resolved alert is a no-op) and the partial index only constrains <em>active</em> docs, so there's no duplicate-key clash. Worst case one write is a harmless no-op.</div>
+<div class="qa"><div class="q">C3 · Your denormalized ratingAvg drifts from the actual reviews. How?</div>Only if a review write committed but the recompute didn't — which the transaction prevents. If it ever happened (e.g. a manual DB edit), I'd run a reconciliation aggregation to recompute from source. The source of truth is always the Review collection.</div>
+<div class="qa"><div class="q">C4 · The TTL index deleted view events a report still needed. Now what?</div>TTL is for ephemeral signal, not records of value. If we needed longer history I'd raise the TTL or roll events up into a durable daily-aggregate collection before they expire. The recommender only needs recent behaviour, so 180 days is deliberate.</div>
+<div class="qa"><div class="q">C5 · Why not just compute ratings on the fly with an aggregation?</div>Because product listings are the hottest read path — aggregating reviews for every card on every page load doesn't scale. Denormalization moves that cost to the rare write. Classic read-heavy tradeoff.</div>
+<div class="qa"><div class="q">C6 · A unique index build fails on production data with duplicates. How do you recover?</div>The build errors and the index isn't created. I'd find the duplicates with an aggregation group-by, resolve them (merge/remove), then let <code>syncIndexes</code> build it. Never force-drop data to make an index — fix the data first.</div>
+<div class="qa"><div class="q">C7 · Snapshots duplicate data. Isn't that a normalization smell?</div>It's intentional denormalization for temporal correctness. Normalization optimises for a single source of truth <em>now</em>; orders need the truth <em>as it was then</em>. Those are different requirements, and history wins here.</div>
+<div class="qa"><div class="q">C8 · Weighted-average cost vs FIFO/LIFO — why average?</div>Average cost is simplest to compute atomically in one document update and is defensible for a store like this. FIFO/LIFO need per-lot tracking (separate cost layers), which is a bigger model. Average was the right complexity for the requirement.</div>
+<div class="qa"><div class="q">C9 · How would you shard this if it got huge?</div>Product and Order are the growth collections. I'd shard Order by a hashed customer or time-based key and keep Product replicated/small. Reviews shard with their product. The embedded design actually helps — fewer cross-shard joins.</div>
+<div class="qa"><div class="q">C10 · Mongoose vs the native driver — why the abstraction?</div>Mongoose gives schema validation, hooks (bcrypt, rating recompute), and populate for referenced docs, which enforce our invariants centrally. The cost is some overhead and magic; for a schema-rich domain like this the safety is worth it.</div>
+
+<h2 id="learned">6 · A new concept I learned</h2>
+<p><strong>Partial indexes.</strong> I used to think a unique constraint was all-or-nothing across a collection. Learning that a unique index can apply to a <em>filtered subset</em> — unique only where <code>status:'active'</code> — solved a real bug elegantly: one active alert per variant, unlimited resolved history, enforced by the database itself. It reframed indexes for me as expressive business rules, not just lookup accelerators.</p>
+
+<h2 id="hard">7 · Still challenging / honest gaps</h2>
+<ul>
+<li><strong>Sharding &amp; scale.</strong> I can reason about a sharding strategy but haven't run this under real horizontal load to validate the key choices.</li>
+<li><strong>Migration discipline.</strong> <code>syncIndexes</code> handles index drift, but there's no formal data-migration framework for schema changes on live data.</li>
+<li><strong>Cost accounting depth.</strong> Weighted-average is solid; a full FIFO/LIFO lot-tracking model is a design I understand but haven't built.</li>
+<li><strong>Deleted spec docs.</strong> The DB structure markdown files are deleted at HEAD — the living schema is the source of truth now, but I'd restore human-readable docs.</li>
+</ul>
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team: <span class="chip haya">Haya</span> Frontend ·
+      <span class="chip mahmod">Mahmod</span> Database · <span class="chip malik">Malik</span> Backend &amp; Architecture ·
+      Every claim cites a repository file path; the current code is the only ground truth.
+    </div>
+  </div>
+</div>
+<script>
+// Highlight the TOC entry of the section in view
+const links=[...document.querySelectorAll('.toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-10% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+</script>
+</body>
+</html>

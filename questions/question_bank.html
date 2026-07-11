@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Question Bank — OptiCart Analysis</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:900px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.92);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:26px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:-18px 0 26px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:38px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;
+       word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .st.gray{background:rgba(148,163,184,.14);color:var(--muted)}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:12px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 16px;border-top:1px solid var(--border)}
+
+  /* ── diagrams ── */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+           padding:18px;margin:16px 0;overflow-x:auto}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram .cap{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+
+  /* ── misc ── */
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);
+               font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:0 16px 60px}
+  }
+
+  /* ── print ── */
+  @media print{
+    .sidebar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary{color:#000 !important}
+    .qa,.codeblock,.note,.warn,tr{page-break-inside:avoid}
+    details{border-color:#999}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+  }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Analysis</div>
+    <p>Presentation deliverable · HEAD 175e68e</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#architecture" class="">1 · Architecture &amp; system design</a></li>
+    <li><a href="#auth" class="">2 · Authentication &amp; security</a></li>
+    <li><a href="#backend" class="">3 · Backend &amp; API</a></li>
+    <li><a href="#database" class="">4 · Database &amp; data modeling</a></li>
+    <li><a href="#frontend" class="">5 · Frontend &amp; UX</a></li>
+    <li><a href="#payments" class="">6 · Payments, orders &amp; inventory</a></li>
+    <li><a href="#warstories" class="">7 · "We actually hit this" — war stories &amp; behavioral</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>All documents</h4>
+    <a href="../00_ANALYSIS/analysis_refresh.html" class="">Analysis Refresh</a>
+    <a href="../project_master_guide.html" class="">Project Master Guide</a>
+    <a href="../manuals/haya_manual.html" class="">Haya</a>
+    <a href="../manuals/malik_manual.html" class="">Malik</a>
+    <a href="../manuals/mahmod_manual.html" class="">Mahmod</a>
+    <a href="../diagrams/diagrams.html" class="">Diagram Gallery</a>
+    <a href="../questions/question_bank.html" class="current">Question Bank</a>
+    <a href="../audit/audit.html" class="">Audit</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Question Bank</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">120+ likely questions with model answers referencing the actual implementation, grouped by domain, tagged with the presenter most likely to receive them. Collapsed by default.</p>
+<div class="note"><strong>How to rehearse.</strong> 126 questions across 7 domains, each tagged with the presenter most likely to field it — <span class="chip malik">Malik</span> backend/architecture, <span class="chip haya">Haya</span> frontend, <span class="chip mahmod">Mahmod</span> database. Answers are deliberately short so you internalise the point, not a script. Every answer is defensible against the current code. Section 7 is the "we actually hit this" war stories — the most convincing thing you can tell an evaluator. <em>Tip: the chip is who leads; anyone should be able to give the one-line version.</em></div>
+
+<h2 id="architecture">1 · Architecture &amp; system design</h2>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Why a monorepo?</div>One repo, two npm packages (client/server) sharing tooling and types, one place to clone and run. It keeps frontend and backend in lockstep without the overhead of separate repos.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Why MERN specifically?</div>One language (TypeScript) top to bottom lowers context-switching, Mongo's document model fits product-with-variants naturally, and the ecosystem is mature. It let a three-person team move fast without gluing mismatched stacks.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Walk me through what happens when a request arrives.</div>helmet → cors → (raw body for the webhook path, else json) → morgan → rate limit → per-route authenticate/authorize → controller → either a JSON response or the single errorHandler envelope.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Why does middleware order matter?</div>Because the Stripe webhook needs the unparsed body — its raw mount must precede <code>express.json()</code>, or the signature can't be verified. Security headers come first so they apply to everything.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How is the code organised on the server?</div>By layer: routes (wiring) → controllers (logic) → models (data) → services (cron, mail, recommendations), with middleware and validators cross-cutting. Each domain has its own controller and router.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> How is the frontend organised?</div>Pages, a reusable <code>ui/</code> library, two layouts (storefront/admin), three contexts for shared state, and one Axios service. Routes and guards live in <code>App.tsx</code>.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Where does business logic live — client or server?</div>Server, always. The client is a presentation layer; prices, coupons, stock, and authz are all decided server-side so a tampered client changes nothing that matters.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How do the three of you avoid stepping on each other?</div>Ownership boundaries: Haya in <code>client/</code>, Mahmod in <code>models/</code> + indexes, Malik across the rest of the server. The layered structure means changes rarely collide.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Is this stateless or stateful?</div>The API is stateless per request (authz rides in the JWT); the only server-side session state is the hashed refresh token in Mongo and the in-memory rate-limit/cron, which are the single-instance caveats.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How would you scale this to multiple instances?</div>Move the rate-limit store to Redis and add a cron leader-lock so the nightly job runs once. Orders/payments already scale because they're database-atomic.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> Why MongoDB over a relational DB?</div>Products with embedded variants, orders with line-item snapshots, and flexible catalog attributes map cleanly to documents. We'd reach for SQL if the domain were heavily relational with strict joins — it isn't here.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What are the external dependencies and what happens if one is down?</div>Stripe (payments), Cloudinary (images), SMTP (email). Email degrades to console logging; a Stripe/Cloudinary outage fails the specific operation with a typed error, not the whole app.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How is configuration managed?</div>Environment variables via <code>.env</code> (with a committed <code>server/.env.example</code>); production refuses to boot without critical secrets like <code>JWT_ACCESS_SECRET</code>.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What's the single biggest architectural strength?</div>Correctness under concurrency: atomic stock, atomic weighted-average costing, fail-closed payments, and rotation-with-reuse-detection auth. The money paths are hard to break.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Biggest architectural weakness?</div>Single-instance assumptions (cron + rate limit) and no CI/Docker. It's built to run correctly on one box, not yet to scale horizontally.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Why TypeScript everywhere?</div>Types catch API/shape mismatches at compile time across the client/server boundary, which is exactly where runtime bugs love to hide.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How many collections and why that many?</div>14, one per bounded concept (users, products, orders, reviews, coupons, purchases, audit, …). Each earns its place; none is a catch-all.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> If you rebuilt it, what would you change?</div>Add CI + Docker from day one, split the largest controllers into service functions, and design for multi-instance (Redis, leader-lock) up front.</div>
+
+<h2 id="auth">2 · Authentication &amp; security</h2>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Describe your auth model in two sentences.</div>A 15-minute JWT access token kept in memory for cheap authorization, plus a 7-day opaque refresh token in an httpOnly SameSite=Strict cookie, stored only as a SHA-256 hash. Rotation on every refresh with a grace window and reuse detection.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Why not just one long-lived token?</div>A long-lived token that's stolen is a long-lived breach. Short access + rotating refresh limits the damage window to minutes and lets us revoke.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Why is the refresh token opaque, not a JWT?</div>So we can revoke it instantly by nulling the stored hash. A JWT can't be un-issued without a denylist, which reintroduces server state anyway.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What stops XSS from stealing the session?</div>The refresh token is httpOnly — JavaScript can't read it. The access token is in memory and dies on reload; it's never persisted where a script can grab it.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What stops CSRF?</div>SameSite=Strict on the refresh cookie means the browser won't send it on cross-site requests, and state-changing calls require the bearer access token that a cross-site page can't read.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Explain reuse detection.</div>If an old (already-rotated) refresh token is presented outside the 30-second grace, that's a replay — we treat it as theft and revoke every session for that user.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What's the grace window for?</div>Two tabs can refresh nearly simultaneously; the one arriving within 30s matching the previous hash still succeeds, so legitimate concurrency doesn't trigger the theft response.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How are passwords stored?</div>bcrypt at cost 12 via a pre-save hook — plaintext never reaches the database, and the cost makes brute force expensive.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How does password reset work?</div>A 6-digit code is issued and emailed (console in dev); verifying it re-hashes the new password, confirms the email, and rotates the refresh token to kill any hijacked session.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Is there rate limiting on auth?</div>Yes — a stricter limiter on auth routes on top of the global 1000/15-min ceiling, to blunt credential stuffing.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How is RBAC enforced?</div><code>authenticate</code> verifies the JWT and sets <code>req.user</code>; <code>authorize(...roles)</code> gates each route. The client mirrors it for UX but the server is the boundary.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> A user's role changes — how fast does it take effect?</div>Up to 15 minutes, because the role is in the access token until it refreshes. That's the accepted cost of stateless authz; instant revocation would need a per-request store lookup.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How do you validate input?</div>Zod schemas as allow-lists strip unknown fields, so a client can't smuggle <code>role</code> or <code>isActive</code> into a create/update.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Do you leak whether an email exists?</div>On register, yes — a duplicate returns <code>AUTH_EMAIL_IN_USE</code>. It's a deliberate UX tradeoff we can name; login errors stay generic to avoid an oracle.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Why store only the hash of the refresh token?</div>A DB leak then hands out no usable sessions — same principle as hashing passwords.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How is the JWT secret handled?</div>Read lazily so <code>.env</code> is honoured; production won't boot without it; dev has a loud-warning fallback. An earlier version always used the fallback due to import hoisting — that's fixed.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What security headers are set?</div>helmet applies a sensible default set (HSTS, no-sniff, frameguard, etc.) before any route runs.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What's your biggest remaining security caveat?</div>The single-instance rate-limit store and role staleness are the known ones; both are documented, bounded, and have clear fixes.</div>
+
+<h2 id="backend">3 · Backend &amp; API</h2>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How are errors handled consistently?</div>Controllers throw <code>AppError(message, status, code)</code>; one <code>errorHandler</code> serialises everything to <code>{ error: { message, code } }</code>. The client always gets the same shape.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Why typed error codes and not just messages?</div>Codes are a stable contract the client can branch on and localise; messages are for humans and can change without breaking clients.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How do image uploads work?</div>Multer buffers files in memory (no disk), then they're streamed to Cloudinary; only the returned secure URLs are stored on the product.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Why memory storage for Multer?</div>No temp files to clean up or leak, and streaming straight to Cloudinary keeps the server stateless about files.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How does the recommendation engine work?</div>A nightly node-cron job computes recency-weighted product co-occurrence from purchase events and upserts top-10 lists; requests only read the cache.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Why precompute recommendations?</div>Co-occurrence over history is expensive; nightly precomputation keeps request latency flat, and recommendations don't need to be second-fresh.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What happens on a cold start with no data?</div>A fallback returns popular items so new products/users still get sensible recommendations.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How does email sending work?</div><code>services/mailer.ts</code> sends via SMTP if configured, else logs to console — so demos need zero mail config. Five triggers total.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What are the analytics endpoints?</div>Five aggregation series — revenue, order volume, top SKUs, customer growth, and purchase spend — computed with Mongo pipelines over delivered orders and registrations.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How is pagination done?</div>Query params (page/limit) with a <code>meta</code> block in the response (total, page, pages), so the client can render controls without guessing.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How is the audit log written?</div>Privileged controllers write an append-only entry (actor, action type, target, before/after) — 9 action types, never updated or deleted.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Why append-only for audit?</div>An audit trail you can edit is worthless. Immutability is the whole point — it's accountability.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How do you prevent trusting client prices?</div>Checkout re-prices every line from the database and recomputes the coupon; the client's numbers are display-only.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How are long-running jobs scheduled?</div>node-cron inside the process starts after the DB is up. It's simple and correct for one instance; multi-instance would need a leader-lock.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What does the health endpoint do?</div>Returns a basic liveness signal so a load balancer or uptime check can tell the process is up.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How do you keep controllers testable?</div>Logic funnels through typed errors and pure-ish helpers (e.g. weighted-average cost), and there's a regression suite (<code>test_fixes.ts</code>, 20 checks) covering the fixed paths.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Why 16 routers instead of one big file?</div>One router per domain keeps concerns isolated and the wiring readable; <code>server.ts</code> just mounts them under <code>/api/*</code>.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How is CORS configured?</div>Explicit origin allow-list with credentials enabled, because the httpOnly refresh cookie must travel cross-origin.</div>
+
+<h2 id="database">4 · Database &amp; data modeling</h2>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> When do you embed vs reference?</div>Embed what's owned and read together (variants in a product, addresses in a user); reference what's shared and edited independently (orders → products).</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> Why snapshot product name/price on orders?</div>So renaming or repricing a product later never rewrites past orders. History must be immutable.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> What's denormalized and why?</div><code>ratingAvg</code>/<code>reviewCount</code> on products, so listing pages read O(1) instead of aggregating reviews on every render.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> How do you keep denormalized ratings correct?</div>A transaction recomputes them on every review create/edit/delete — the write pays so the read stays cheap and consistent.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> Explain the partial unique index.</div>Unique on <code>(productId, variantSku)</code> only where <code>status:'active'</code> — one active low-stock alert per variant, unlimited resolved history.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> What's a TTL index used for here?</div>Product view events carry a 180-day TTL so the stream self-prunes; no cleanup job, no unbounded growth.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> How does search work at the DB level?</div>A text index over product name/description backs the search query so Mongo ranks matches instead of scanning.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> Why compound indexes on the audit log?</div>It's queried by actor, action type, and target; indexing those keeps "everything this admin did" fast as the log grows.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> How is one-review-per-user enforced?</div>A unique <code>(user, product)</code> index — the database rejects a second review, no app-level race can slip past it.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> How is money represented?</div>Integer cents everywhere. Floats can't represent currency exactly, so we never use them for money.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> How is the category tree modeled?</div>Self-referencing <code>parent</code>, two levels in practice, with a unique slug for URLs and filtering.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> What does syncIndexes do at boot?</div>Reconciles live indexes with the schema — it's how the old full unique index on alerts was replaced by the partial one with no manual migration.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> Explain weighted-average costing.</div>New cost = (oldStock·oldCost + qty·newCost)/(oldStock+qty), computed atomically inside the purchase update so stock and cost never disagree.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> Why snapshots on the Purchase model?</div>Product name and buyer name are copied so procurement records stay readable even if the product or user changes later.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> Do you use transactions?</div>Yes, on the review flow, so the Review write and the product rating recompute commit together or not at all.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> How does the seed script stay safe to re-run?</div>It's idempotent — upserting known fixtures rather than blindly inserting, so re-seeding doesn't duplicate data.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> What's your migration story?</div><code>syncIndexes</code> handles index drift; schema data-migrations are manual today — a formal framework is a known gap.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> Where would this schema strain first at scale?</div>Order and ProductEvent growth; I'd shard Order by customer/time and roll events into daily aggregates. Embedding actually reduces cross-shard joins.</div>
+
+<h2 id="frontend">5 · Frontend &amp; UX</h2>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> Why Context instead of Redux?</div>Three bounded slices (auth, shop, toast) fit Context cleanly without Redux boilerplate. It's the right size for the state we actually share.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> Where is the access token stored client-side?</div>In memory in AuthContext — never localStorage — and silently refreshed from the httpOnly cookie on reload.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> What is single-flight refresh?</div>Concurrent 401s share one refresh promise, so ten failures cause one refresh and ten replays — not ten refreshes racing each other.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> Why one Axios instance?</div>baseURL, credentials, and the refresh interceptor are configured once and inherited by every call — no inconsistent fetch handling.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> How do guest carts survive login?</div>Guests keep cart/wishlist in localStorage; on login the client merges into the server cart and clears local, with stock re-validated server-side.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> How do route guards work and are they secure?</div><code>ProtectedRoute</code> gates by role for UX; it's not security — the server authorises every request, so bypassing the guard just yields a 403.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> Where does a user land after login?</div>Customers on the storefront, staff on the admin dashboard; a redirect back to an auth page is ignored so nobody is stranded.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> How is filtering/search state managed?</div>In the URL query string, so results are shareable, bookmarkable, and back-button-correct; the list page reads params and refetches.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> Why is search a submit form now?</div>The header search submits to the product list with <code>?search=</code> — simpler and fully accessible; the earlier live-suggestion dropdown was removed.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> How do you handle loading states?</div>Skeleton loaders so layout doesn't jump, plus disabled buttons during mutations — the user always sees progress.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> How do product variants work in the UI?</div>Selecting a variant swaps price, gallery, and stock, and add-to-cart targets that variant's SKU specifically.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> What's the DataTable component?</div>A reusable admin table (sort, paginate, row actions) used across Products, Orders, Coupons, Users and more for consistent behaviour.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> How is the design system kept consistent?</div>Tailwind tokens defined once in the config; components consume tokens, so a theme change is one edit.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> Is the app responsive?</div>Yes, mobile-first: header collapses to a drawer, admin sidebar collapses, grids reflow. A responsiveness pass fixed the earlier full-reload mobile drawer.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> How does the app show money?</div>The server sends cents; the UI formats to currency at render only, never doing math on displayed dollars.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> How does the notification bell work?</div>Shows an unread count with a dropdown and mark-all-read, reading the per-user Notification collection through the API.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> Why is the bundle 546 kB and what would you do?</div>It's one chunk; I'd route-split the admin area from the storefront with lazy imports since most visitors never load admin.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> How does TypeScript help the UI?</div>Shared response types make API mismatches compile errors, and typed props catch wrong usage before runtime.</div>
+
+<h2 id="payments">6 · Payments, orders &amp; inventory</h2>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Walk me through a checkout.</div>Server re-prices the cart and re-validates the coupon, creates a Stripe PaymentIntent, Stripe calls the fail-closed webhook, stock decrements atomically, and the order is created from server prices with snapshots.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What does fail-closed mean for the webhook?</div>A missing or invalid signature is rejected with a 400 — there is no branch that trusts an unverified body. You can't fake a "payment succeeded".</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How do you prevent overselling?</div>Stock decrement is a conditional <code>$inc</code> that only applies when <code>stock ≥ qty</code>; a lost race clamps to 0 and logs — it never goes negative.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Why re-validate the coupon at checkout if it was previewed?</div>The preview is client-controlled by the time it returns; anyone can POST a coupon straight to checkout, so the server re-checks caps, expiry, and min-order.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How do refunds work?</div><code>stripe.refunds.create</code> (mock id if keyless) runs before the status persists; the refund subdoc is filled, a <code>refund_decision</code> audit is written, and a Stripe failure aborts with 502.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What is mock mode?</div>When Stripe keys are absent (dev), payments and refunds are simulated so the flow runs end to end without real charges.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Could mock mode run in production?</div>The secret fail-fast means a misconfigured prod deploy won't boot, surfacing the missing keys before traffic. I'd still add an explicit prod assertion.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Describe the order state machine.</div>Seven states with enforced legal transitions and recorded reasons; illegal jumps are rejected and each change is auditable.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How are order totals trusted?</div>They're computed server-side from snapshotted line prices, never from client input.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> How does restocking affect cost?</div>A purchase adds stock and blends the weighted-average cost in one atomic update, so margin math stays honest as buy-prices drift.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What if the Purchase record fails to save after the stock update?</div>A compensating update reverts the stock/cost change; deletes mirror this and refuse (409) if the revert would make stock negative.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> How do low-stock alerts fire?</div>A stock write crossing the threshold creates a duplicate-safe alert; the partial index guarantees one active alert per variant.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Which events feed recommendations — views or purchases?</div>Purchase events (they carry userId); anonymous view events are supplementary and, by design, not user-attributed.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How are coupons modeled?</div>With global and per-user usage caps plus expiry and min-order, all re-checked at checkout, and audited CRUD in admin.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> Can a customer review anything they want?</div>No — only a product from a delivered order (verified-purchase rule), enforced before the review is accepted.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What happens to stock if a payment fails?</div>Nothing — stock only decrements on <code>payment_intent.succeeded</code>, so a failed payment leaves inventory untouched.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> What does the customer see after ordering?</div>An order confirmation rendered from the server response, and the order appears in their history with a status stepper.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How is a duplicate webhook handled?</div>We create one order per intent, so a repeat finds it already exists; I'd add an explicit processed-event guard by event id to make idempotency bulletproof.</div>
+
+<h2 id="warstories">7 · "We actually hit this" — war stories &amp; behavioral</h2>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> Tell me about a real bug you fixed. (Webhook)</div>Our webhook signature verification was structurally broken: <code>express.json()</code> consumed the raw body before Stripe could verify it, so the handler fell back to trusting unverified input. We mounted <code>express.raw()</code> on the webhook path <em>before</em> the JSON parser and made verification fail-closed. Lesson: middleware order is correctness, not cosmetics.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> A subtle one you're proud of catching? (JWT secret)</div>The JWT secret was read at module load, but ESM hoists imports — so it ran <em>before</em> <code>.env</code> applied and silently always used the fallback secret, even when a real one was set. We made the read lazy and added a production boot refusal. It taught me to respect import evaluation order.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> A database bug? (Low-stock index)</div>A full unique index on <code>(productId, variantSku, status)</code> blocked a <em>second</em> resolved alert per variant — resolving twice threw E11000. We switched to a partial unique index scoped to active alerts and let <code>syncIndexes</code> drop the old one. That's where I really learned partial indexes.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> A concurrency bug? (Oversell race)</div>Stock was decremented read-modify-save, so two simultaneous orders could both pass the check and oversell. We moved to an atomic conditional <code>$inc</code> guarded by <code>stock ≥ qty</code>, letting the database arbitrate. Correct concurrency belongs in the DB, not the app.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> A money bug? (Refunds)</div>"Refunded" was only a status change — no Stripe call, no record, no audit. We made it call <code>stripe.refunds.create</code> before persisting, populate the refund subdoc, write a dedicated audit, and abort on failure. Status should never claim money moved when it didn't.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> A frontend bug? (Stranded on login)</div>A <code>?redirect=</code> pointing back at an auth page could loop the user on the login screen after signing in. We now ignore auth-page redirects and send customers to the storefront, staff to the dashboard. Small bug, very visible.</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> A navigation bug? (Mega-menu)</div>The category mega-menu was hardcoded with names instead of slugs and fake featured ids, so links went nowhere, and the mobile drawer did full page reloads. We fed it live categories and made every click a slug-based SPA navigation.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> A coupon bug? (Checkout bypass)</div>Coupon usage and per-user caps were checked in preview but not at checkout, so you could bypass them by posting the code straight to checkout. Now checkout re-validates everything server-side.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> How did you verify the fixes didn't break anything?</div>A 20-check regression suite (<code>server/src/test_fixes.ts</code>), clean TypeScript builds of both packages, and an HTTP smoke test through the real middleware chain. All green.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> How did you split the work as a team?</div>By layer and strength: Haya on the frontend, Mahmod on models and indexes, Malik on backend logic and architecture. The Jira board (11 epics, 40 sub-tasks) reflects that split, roughly even on story points.</div>
+<div class="qa"><div class="q"><span class="chip mahmod">Mahmod</span> The board shows checkout as In Progress — is it done?</div>The CSV is an early export; every epic on it is now complete and hardened in the code. Payments actually went beyond the original plan with a fail-closed webhook, atomic stock, and real refunds.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What did each of you learn?</div>Malik: compensating transactions for multi-document safety. Haya: single-flight request coordination. Mahmod: partial indexes as business rules. Each came out of a real problem, not a tutorial.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What are you honestly still not happy with?</div>Single-instance cron and rate limiting, no CI/Docker, <code>server/dist</code> tracked in git, and a 546 kB bundle. All known, all with clear fixes — none is a happy-path correctness bug.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> If we gave you one more week, what ships?</div>Redis-backed rate limiting + cron leader-lock, route-based code splitting, CI with the regression suite, and a Dockerfile. That's the gap between "correct on one box" and "production-ready".</div>
+<div class="qa"><div class="q"><span class="chip haya">Haya</span> What are you most proud of as a team?</div>That the hard parts — auth rotation, payments, atomic inventory and costing — are genuinely correct under concurrency, and we can each explain why, not just that they work.</div>
+<div class="qa"><div class="q"><span class="chip malik">Malik</span> What surprised you most building this?</div>How much of "security" and "correctness" is really about <em>ordering</em> — middleware order, do-then-undo order, verify-before-persist order. Get the order right and whole classes of bugs vanish.</div>
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team: <span class="chip haya">Haya</span> Frontend ·
+      <span class="chip mahmod">Mahmod</span> Database · <span class="chip malik">Malik</span> Backend &amp; Architecture ·
+      Every claim cites a repository file path; the current code is the only ground truth.
+    </div>
+  </div>
+</div>
+<script>
+// Highlight the TOC entry of the section in view
+const links=[...document.querySelectorAll('.toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-10% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+%% OptiCart — repository structure
+flowchart TB
+  ROOT["OptiCart/ (npm monorepo)"]
+  ROOT --> CLIENT["client/ — React 19 + Vite"]
+  ROOT --> SERVER["server/ — Express + TS"]
+  ROOT --> CSV["OptiCart_Jira_Import_v2.csv"]
+  ROOT --> README["README.md"]
+
+  CLIENT --> CSRC["src/"]
+  CSRC --> CCTX["context/ (Auth·Shop·Toast)"]
+  CSRC --> CAPI["services/api.ts"]
+  CSRC --> CCMP["components/ (layout·ui)"]
+  CSRC --> CPG["pages/ (+ pages/admin)"]
+  CSRC --> CAPP["App.tsx (routes+guards)"]
+
+  SERVER --> SSRC["src/"]
+  SSRC --> SBOOT["server.ts"]
+  SSRC --> SCFG["config/ (db·stripe·cloudinary)"]
+  SSRC --> SMW["middleware/"]
+  SSRC --> SMOD["models/ (14)"]
+  SSRC --> SCTRL["controllers/"]
+  SSRC --> SRT["routes/"]
+  SSRC --> SSVC["services/ (scheduler·mailer·recommendation)"]
+  SSRC --> SVAL["validators/"]

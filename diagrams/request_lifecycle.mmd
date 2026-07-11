@@ -1,0 +1,15 @@
+%% OptiCart — request lifecycle & middleware order
+flowchart LR
+  REQ([Incoming request]) --> H[helmet]
+  H --> C[cors + credentials]
+  C --> RAW{"path == /api/orders/webhook ?"}
+  RAW -- yes --> RB[express.raw — keep bytes for Stripe sig]
+  RAW -- no --> JSON[express.json + cookie-parser]
+  RB --> LOG[morgan dev]
+  JSON --> LOG
+  LOG --> RL[rate limiter 1000/15min]
+  RL --> AUTH["authenticate? authorize? (per route)"]
+  AUTH --> CTRL[controller]
+  CTRL -- throw AppError / next err --> EH[errorHandler]
+  CTRL -- success --> RES([JSON response])
+  EH --> ERES(["{ error: { message, code } }"])

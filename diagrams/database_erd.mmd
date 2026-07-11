@@ -1,0 +1,48 @@
+%% OptiCart — entity relationships (14 collections)
+erDiagram
+  USER ||--o{ ORDER : places
+  USER ||--o{ REVIEW : writes
+  USER ||--|| CART : has
+  USER ||--|| WISHLIST : has
+  USER ||--o{ NOTIFICATION : receives
+  USER ||--o{ AUDITLOG : "actor of"
+  CATEGORY ||--o{ CATEGORY : "parent of"
+  CATEGORY ||--o{ PRODUCT : contains
+  PRODUCT ||--o{ REVIEW : "reviewed in"
+  PRODUCT ||--o{ LOWSTOCKALERT : triggers
+  PRODUCT ||--o{ PRODUCTEVENT : "viewed in"
+  PRODUCT ||--o{ PURCHASE : "restocked by"
+  PRODUCT ||--o{ PRODUCTRECOMMENDATION : "recommends"
+  ORDER ||--o{ REVIEW : "verified by"
+  COUPON ||--o{ ORDER : "applied to"
+  PRODUCT {
+    string name
+    string slug
+    int costPriceCents
+    float ratingAvg
+    int reviewCount
+    array variants "embedded: sku, priceCents, stock"
+  }
+  ORDER {
+    ref userId
+    array items "snapshot: name, priceCents, qty"
+    string status "7-state machine"
+    object refund "embedded subdoc"
+  }
+  PURCHASE {
+    ref productId
+    string productName "snapshot"
+    int quantity
+    int unitCostCents
+    int totalCostCents "precomputed"
+    string createdByName "snapshot"
+  }
+  LOWSTOCKALERT {
+    ref productId
+    string variantSku
+    string status "partial-unique on active"
+  }
+  PRODUCTEVENT {
+    ref productId
+    date createdAt "TTL 180d"
+  }

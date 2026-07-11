@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haya — Frontend Manual — OptiCart Analysis</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:900px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.92);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:26px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:-18px 0 26px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:38px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;
+       word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .st.gray{background:rgba(148,163,184,.14);color:var(--muted)}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:12px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 16px;border-top:1px solid var(--border)}
+
+  /* ── diagrams ── */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+           padding:18px;margin:16px 0;overflow-x:auto}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram .cap{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+
+  /* ── misc ── */
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);
+               font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:0 16px 60px}
+  }
+
+  /* ── print ── */
+  @media print{
+    .sidebar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary{color:#000 !important}
+    .qa,.codeblock,.note,.warn,tr{page-break-inside:avoid}
+    details{border-color:#999}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+  }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Analysis</div>
+    <p>Presentation deliverable · HEAD 175e68e</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#scope" class="">1 · Your domain in one breath</a></li>
+    <li><a href="#concepts" class="">2 · Core concepts you must own</a></li>
+    <li><a href="#c-context" class="h3">Three contexts, one job each</a></li>
+    <li><a href="#c-axios" class="h3">One Axios instance + single-flight refresh</a></li>
+    <li><a href="#c-guards" class="h3">Route guards</a></li>
+    <li><a href="#c-guest" class="h3">Guest-first shopping</a></li>
+    <li><a href="#c-url" class="h3">URL as state</a></li>
+    <li><a href="#trace" class="">3 · End-to-end trace: browse → buy</a></li>
+    <li><a href="#qa" class="">4 · Questions &amp; model answers (25+)</a></li>
+    <li><a href="#curveballs" class="">5 · Curveballs (10)</a></li>
+    <li><a href="#learned" class="">6 · A new concept I learned</a></li>
+    <li><a href="#hard" class="">7 · Still challenging / honest gaps</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>All documents</h4>
+    <a href="../00_ANALYSIS/analysis_refresh.html" class="">Analysis Refresh</a>
+    <a href="../project_master_guide.html" class="">Project Master Guide</a>
+    <a href="../manuals/haya_manual.html" class="current">Haya</a>
+    <a href="../manuals/malik_manual.html" class="">Malik</a>
+    <a href="../manuals/mahmod_manual.html" class="">Mahmod</a>
+    <a href="../diagrams/diagrams.html" class="">Diagram Gallery</a>
+    <a href="../questions/question_bank.html" class="">Question Bank</a>
+    <a href="../audit/audit.html" class="">Audit</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Haya — Frontend Manual</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">React 19 · Vite · TypeScript · Router 7 · Contexts · Axios interceptors · UI library · Tailwind. Everything needed to answer out-of-context frontend questions.</p>
+<div class="note"><span class="chip haya">Haya</span> <strong>Frontend.</strong> Your speaking kit for React 19 + Vite + TypeScript + Router 7 + Context + Axios + Tailwind. Built so you can answer out of order. Every claim points at a real file. Seven sections: your domain, core concepts, one end-to-end trace, 25+ Q&amp;A, 10 curveballs, what you learned, what's still hard.</p></div>
+
+<h2 id="scope">1 · Your domain in one breath</h2>
+<p>You own everything under <code>client/</code>: the SPA shell, the three contexts, the single Axios instance and its refresh interceptor, both layouts, the reusable UI library, and every page — storefront and admin. You make the app feel instant and never leak a broken state to the user.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Concern</th><th>File(s)</th></tr></thead>
+<tbody>
+<tr><td>App shell &amp; routes</td><td><code>client/src/App.tsx</code> · <code>main.tsx</code></td></tr>
+<tr><td>State</td><td><code>context/AuthContext.tsx</code> · <code>ShopContext.tsx</code> · <code>ToastContext.tsx</code></td></tr>
+<tr><td>Networking</td><td><code>services/api.ts</code> (Axios instance + interceptor)</td></tr>
+<tr><td>Layouts</td><td><code>components/layout/StorefrontLayout.tsx</code> · <code>AdminLayout.tsx</code></td></tr>
+<tr><td>UI library</td><td><code>components/ui/*</code> — <code>DataTable</code>, <code>SearchBox</code>, modals, skeletons</td></tr>
+<tr><td>Key pages</td><td><code>ProductList.tsx</code> · <code>ProductDetail.tsx</code> · <code>Cart.tsx</code> · <code>Checkout.tsx</code> · <code>pages/admin/*</code></td></tr>
+<tr><td>Design tokens</td><td><code>tailwind.config</code></td></tr>
+</tbody></table></div>
+
+<h2 id="concepts">2 · Core concepts you must own</h2>
+<h3 id="c-context">Three contexts, one job each</h3>
+<p><code>AuthContext</code> holds the user and the in-memory access token and drives silent refresh; <code>ShopContext</code> holds cart + wishlist and handles the guest→auth merge; <code>ToastContext</code> surfaces success/error toasts. Keeping them separate means a cart update doesn't re-render auth-only consumers.</p>
+<h3 id="c-axios">One Axios instance + single-flight refresh</h3>
+<p>Every call goes through one instance (<code>services/api.ts</code>) with <code>withCredentials</code> so the httpOnly refresh cookie rides along. A response interceptor catches 401s and triggers exactly one refresh via a shared module-level promise; concurrent 401s queue on that promise and replay once it resolves. The access token lives in memory, so a reload starts tokenless and refreshes on mount.</p>
+<h3 id="c-guards">Route guards</h3>
+<p><code>&lt;ProtectedRoute&gt;</code> in <code>App.tsx</code> gates account and admin routes by role and redirects unauthenticated users to login. It's UX, not security — the server enforces the real boundary — but it keeps users out of screens they can't use.</p>
+<h3 id="c-guest">Guest-first shopping</h3>
+<p>Cart and wishlist work with no account (localStorage via <code>utils/guestCart.ts</code>). On login the local state merges into the server and clears. This is why "add to cart, then sign in" never loses the cart.</p>
+<h3 id="c-url">URL as state</h3>
+<p>Catalog filters, sort, page, and the header search all live in the URL query string. The header search is a submit form that pushes <code>?search=</code>; <code>ProductList</code> reads params so results are shareable and back-button-correct.</p>
+
+<h2 id="trace">3 · End-to-end trace: browse → buy</h2>
+<ol>
+<li>Storefront loads; <code>AuthContext</code> silently refreshes from the cookie; category nav is fetched live and rendered by slug.</li>
+<li>User searches — submit pushes <code>?search=fridge</code>; <code>ProductList</code> reads the param, shows skeletons, fetches <code>/products</code>, renders cards with pagination.</li>
+<li>Product page: pick a variant (price/gallery/stock update), add to cart → <code>ShopContext</code> updates optimistically and a toast confirms.</li>
+<li>Cart page revalidates stock; a coupon field previews a discount. Checkout collects an address and runs the Stripe step.</li>
+<li>After sign-in mid-flow, the customer is returned to the storefront (never stranded on login), cart intact via merge. Order confirmation renders from the server response.</li>
+</ol>
+
+<h2 id="qa">4 · Questions &amp; model answers (25+)</h2>
+<div class="qa"><div class="q">Q1 · Why Context instead of Redux?</div>The app has three well-bounded slices of shared state (auth, shop, toast). Context covers that cleanly without Redux's boilerplate. If cross-cutting state grew, I'd reconsider, but today Redux would be overkill.</div>
+<div class="qa"><div class="q">Q2 · Where do you store the access token and why?</div>In memory inside <code>AuthContext</code> — never localStorage. localStorage is script-readable (XSS risk). On reload we silently refresh from the httpOnly cookie, so users don't notice.</div>
+<div class="qa"><div class="q">Q3 · What is silent refresh?</div>When a request 401s, the Axios interceptor calls <code>/auth/refresh</code>, gets a new access token, and replays the original request — the user never sees the blip.</div>
+<div class="qa"><div class="q">Q4 · Ten requests 401 at once — do you fire ten refreshes?</div>No. A shared module-level promise makes it single-flight: one refresh, the rest await it and replay. Otherwise we'd hammer the endpoint and risk rotation races.</div>
+<div class="qa"><div class="q">Q5 · Why one Axios instance?</div>So the baseURL, credentials, and the refresh interceptor are configured once and every call inherits them. No scattered fetch calls with inconsistent auth handling.</div>
+<div class="qa"><div class="q">Q6 · How do guest carts survive login?</div><code>ShopContext</code> keeps a localStorage cart for guests; on login it merges into the server cart and clears local storage. Stock is re-validated server-side.</div>
+<div class="qa"><div class="q">Q7 · How do route guards work?</div><code>&lt;ProtectedRoute&gt;</code> checks the user's role from context and either renders the route or redirects. Admin routes require staff roles; account routes require any logged-in user.</div>
+<div class="qa"><div class="q">Q8 · Isn't a client-side guard insecure?</div>By itself, yes — anyone can edit client code. It's purely UX. The server authorises every request, so bypassing the guard just yields a 403 from the API.</div>
+<div class="qa"><div class="q">Q9 · Where do you land a user after login?</div>Customers go to the storefront, staff to <code>/admin/dashboard</code>. If the redirect param points back at an auth page we ignore it, so nobody loops on the login screen.</div>
+<div class="qa"><div class="q">Q10 · How does filtering/sorting/search work on the list page?</div>All of it is URL query state. Changing a filter updates the query string; <code>ProductList</code> reads params and refetches. That makes results shareable and back-button-correct.</div>
+<div class="qa"><div class="q">Q11 · Why is the search a submit form now, not a live dropdown?</div>An earlier version had a live-suggestion dropdown; the current header search submits to the product list with <code>?search=</code>. It's simpler, fully keyboard-accessible, and URL-driven.</div>
+<div class="qa"><div class="q">Q12 · How do you handle loading states?</div>Skeleton loaders for lists and detail pages so layout doesn't jump, plus disabled buttons during mutations. The user always sees progress, never a frozen screen.</div>
+<div class="qa"><div class="q">Q13 · How do variants work on the product page?</div>A product has embedded variants; selecting one swaps price, gallery, and stock indicator, and add-to-cart targets that variant's SKU — never the product generically.</div>
+<div class="qa"><div class="q">Q14 · What's the DataTable used for?</div>It's the reusable admin table (sorting, pagination, row actions) behind Products, Orders, Coupons, Users, and more — one component, consistent behaviour everywhere.</div>
+<div class="qa"><div class="q">Q15 · Where does SearchBox get used?</div>Seven admin pages (Products, Orders, Coupons, LowStock, Reviews, Users, AuditLogs). It was briefly suspected dead code; it isn't — verified by grep.</div>
+<div class="qa"><div class="q">Q16 · How is the admin sidebar role-scoped?</div><code>AdminLayout</code> filters its nav by the user's role, so an inventory manager doesn't see super-admin-only items. The server still guards each endpoint.</div>
+<div class="qa"><div class="q">Q17 · How do toasts work?</div><code>ToastContext</code> exposes success/error helpers; the Axios interceptor and mutations call them, so feedback is consistent and centrally styled.</div>
+<div class="qa"><div class="q">Q18 · How does the design system stay consistent?</div>Tailwind tokens (colors, spacing, radii, typography) defined once in <code>tailwind.config</code>; components consume tokens, not hardcoded values, so a theme tweak is one place.</div>
+<div class="qa"><div class="q">Q19 · Is the app responsive?</div>Yes — mobile-first Tailwind. The header collapses to a drawer, the admin sidebar collapses, grids reflow. A responsiveness pass fixed the earlier mobile drawer that did full reloads.</div>
+<div class="qa"><div class="q">Q20 · Why React 19 and Vite?</div>Vite gives near-instant HMR and fast builds; React 19 is the current major. Together they keep the dev loop tight.</div>
+<div class="qa"><div class="q">Q21 · How does the notification bell work?</div><code>NotificationBell</code> shows an unread count and a dropdown; mark-all-read clears it. It reads the per-user Notification collection through the API.</div>
+<div class="qa"><div class="q">Q22 · How do you show money?</div>The server sends integer cents; the UI formats to currency at render time only. We never do arithmetic on the displayed dollar value.</div>
+<div class="qa"><div class="q">Q23 · What happens on a failed API call?</div>The interceptor surfaces a toast from the server's <code>error.code/message</code>, and the component keeps a usable state (skeleton clears, retry available). Errors are predictable because the API envelope is uniform.</div>
+<div class="qa"><div class="q">Q24 · How is the profile page different from the old stub?</div>It's a real page (<code>pages/admin/Profile.tsx</code>): identity card, live name editing via PATCH, and password guidance — replacing a title-only placeholder.</div>
+<div class="qa"><div class="q">Q25 · How is TypeScript helping on the frontend?</div>Shared response types make API mismatches compile errors, and props are typed so a wrong prop is caught before runtime. It's most valuable across the context boundaries.</div>
+<div class="qa"><div class="q">Q26 · How does the category nav stay correct?</div>It's fetched from <code>GET /categories</code> and every item navigates by slug via a helper — no hardcoded names, so adding a category in admin shows up in the storefront nav automatically.</div>
+
+<h2 id="curveballs">5 · Curveballs (10)</h2>
+<div class="qa"><div class="q">C1 · A user opens two tabs and both refresh at once. Does the UI break?</div>No. Client-side single-flight means each tab fires at most one refresh, and the server's 30-second grace window accepts the concurrent one without logging anyone out. The tabs stay in sync.</div>
+<div class="qa"><div class="q">C2 · The refresh call itself 401s. What does the user see?</div>The interceptor gives up gracefully: it clears auth state and routes to login rather than looping. The half-finished request fails with a toast, not a spinner forever.</div>
+<div class="qa"><div class="q">C3 · Your client guard says admin, the server says 403. Who wins and why?</div>The server, always. The guard can be edited in devtools; the API can't be fooled. That's why the guard is UX and the server is security — I can bypass my own guard and still get nothing.</div>
+<div class="qa"><div class="q">C4 · A product's stock dropped to zero while it sat in a guest cart. Then they log in.</div>The merge re-validates against the server; the out-of-stock line is flagged/removed and a toast explains it. Better to show the truth at login than fail at checkout.</div>
+<div class="qa"><div class="q">C5 · The 546 kB bundle — why, and what would you do?</div>It's currently one chunk. I'd route-split the admin area from the storefront with lazy imports and dynamic <code>import()</code>, since most visitors never load admin. That alone would cut the initial payload a lot.</div>
+<div class="qa"><div class="q">C6 · Context re-render performance — when does it bite?</div>When a context value changes, all consumers re-render. I keep the three contexts narrow and memoize values so a cart tick doesn't re-render auth consumers. If a slice got hot, I'd split it or move to a selector-based store.</div>
+<div class="qa"><div class="q">C7 · Someone disables JavaScript. What works?</div>Nothing — it's a client-rendered SPA. For SEO/first-paint I'd reach for SSR (Next.js) or prerendering the catalog, but that's a bigger architectural change than this project scoped.</div>
+<div class="qa"><div class="q">C8 · How do you keep the cart from double-submitting on a slow network?</div>The action button disables during the in-flight request and re-enables on resolve; optimistic UI updates are reconciled with the server response, so a double click can't create two line items.</div>
+<div class="qa"><div class="q">C9 · The access token expires mid-form-submit. Does the user lose their input?</div>No — the interceptor refreshes and replays the same request with the same body, so the submit completes transparently. The form state never leaves the component.</div>
+<div class="qa"><div class="q">C10 · If you had one afternoon to improve the frontend, what?</div>Route-based code splitting for the admin bundle, plus a shared typed API client generated from the server types so the two can never drift. Biggest wins for effort.</div>
+
+<h2 id="learned">6 · A new concept I learned</h2>
+<p><strong>Single-flight request coordination.</strong> Before this project I'd have let each 401 trigger its own refresh. Learning to serialise them behind one shared promise — so N failures cause one refresh and N replays — changed how I think about async UI: the fix wasn't more state, it was a single point of coordination. It also taught me why the access token belongs in memory, not storage.</p>
+
+<h2 id="hard">7 · Still challenging / honest gaps</h2>
+<ul>
+<li><strong>Bundle size.</strong> 546 kB unsplit. I understand route-based splitting but haven't wired it yet.</li>
+<li><strong>No SSR.</strong> Pure CSR means weak SEO and slower first paint for the public catalog.</li>
+<li><strong>Type drift.</strong> Frontend and backend types are maintained by hand; a generated client would remove a whole class of mismatch bugs.</li>
+<li><strong>Testing.</strong> There's a backend regression suite but little automated frontend testing — component/interaction tests are the gap I'd close next.</li>
+</ul>
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team: <span class="chip haya">Haya</span> Frontend ·
+      <span class="chip mahmod">Mahmod</span> Database · <span class="chip malik">Malik</span> Backend &amp; Architecture ·
+      Every claim cites a repository file path; the current code is the only ground truth.
+    </div>
+  </div>
+</div>
+<script>
+// Highlight the TOC entry of the section in view
+const links=[...document.querySelectorAll('.toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-10% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+</script>
+</body>
+</html>
