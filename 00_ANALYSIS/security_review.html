@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Review — OptiCart Analysis</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:900px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.92);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:26px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:-18px 0 26px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:38px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;
+       word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .st.gray{background:rgba(148,163,184,.14);color:var(--muted)}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:12px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 16px;border-top:1px solid var(--border)}
+
+  /* ── diagrams ── */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+           padding:18px;margin:16px 0;overflow-x:auto}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram .cap{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+
+  /* ── misc ── */
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);
+               font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:0 16px 60px}
+  }
+
+  /* ── print ── */
+  @media print{
+    .sidebar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary{color:#000 !important}
+    .qa,.codeblock,.note,.warn,tr{page-break-inside:avoid}
+    details{border-color:#999}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+  }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Analysis</div>
+    <p>Source-of-truth deliverable · HEAD 175e68e</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#strengths" class="">A · Implemented well (current code)</a></li>
+    <li><a href="#fixed" class="">B · Found in audit → fixed → proven (the security arc)</a></li>
+    <li><a href="#open" class="">C · Genuinely still open (re-verified at HEAD)</a></li>
+    <li><a href="#posture" class="">One-line posture summary</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>All documents</h4>
+    <a href="repo_map.html" class="">Repository Map</a>
+    <a href="feature_inventory.html" class="">Feature Inventory</a>
+    <a href="architecture_report.html" class="">Architecture Report</a>
+    <a href="tech_decisions.html" class="">Tech Decisions</a>
+    <a href="security_review.html" class="current">Security Review</a>
+    <a href="project_audit.html" class="">Project Audit</a>
+    <a href="evaluation_mapping.html" class="">Evaluation Mapping</a>
+    <a href="planning_phase.html" class="">Planning Phase</a>
+    <a href="future_feature.html" class="">Future Feature — Smart Energy Advisor</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Security Review</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">Honest audit of the CURRENT code — strengths with evidence, the weaknesses that were found and since fixed, and what genuinely remains open.</p>
+<div class="note"><strong>Scope:</strong> honest audit of the code at HEAD <code>175e68e</code>. Section A lists what is genuinely done well. Section B lists weaknesses that were found in the July audit and <strong>have since been fixed</strong> — kept because "found → fixed → proven" is the strongest security story a team can tell. Section C is what <strong>genuinely remains open</strong>, each re-verified against the current code. Fix evidence: <code>server/src/test_fixes.ts</code> (20/20) + both workspace builds + an HTTP smoke test.</div>
+
+<h2 id="strengths">A · Implemented well (current code)</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>Control</th><th>Evidence</th></tr></thead>
+<tbody>
+<tr><td>S1</td><td><strong>Fail-closed Stripe webhook</strong> — raw-body route; with a real key + secret, unsigned/forged payloads get 400, never a fallback parse</td><td><code>server.ts</code> (express.raw mount) · <code>controllers/order.ts stripeWebhook</code></td></tr>
+<tr><td>S2</td><td><strong>Refresh-token rotation + reuse revocation</strong> — hash-only storage, atomic rotation, 30-s multi-tab grace, 403 <code>AUTH_SESSION_COMPROMISED</code> on reuse</td><td><code>controllers/auth.ts</code> · <code>utils/tokens.ts</code></td></tr>
+<tr><td>S3</td><td><strong>Access token in memory only</strong> — never localStorage; XSS can't exfiltrate a persisted token; reload re-authenticates via the cookie</td><td><code>services/api.ts:6-11</code> · <code>AuthContext.tsx</code></td></tr>
+<tr><td>S4</td><td><strong>HTTP-only, <code>SameSite=Strict</code>, secure-in-prod refresh cookie</strong> (strict same-site is also the CSRF story for the refresh endpoint)</td><td><code>controllers/auth.ts getCookieOptions</code></td></tr>
+<tr><td>S5</td><td><strong>Secrets fail-fast</strong> — production refuses to boot without <code>JWT_ACCESS_SECRET</code>; the secret is resolved lazily so .env is actually honored (ESM hoisting pitfall fixed)</td><td><code>utils/tokens.ts getAccessSecret</code></td></tr>
+<tr><td>S6</td><td><strong>RBAC enforced server-side</strong> on every protected router; client guards are UX only</td><td><code>middleware/auth.ts</code>; e.g. <code>routes/user.ts:16</code>, <code>routes/purchase.ts:8</code></td></tr>
+<tr><td>S7</td><td><strong>Email-verification gate</strong> — sessions open only after a hashed, 15-min-TTL 6-digit code; login re-issues codes for unverified accounts</td><td><code>controllers/auth.ts</code></td></tr>
+<tr><td>S8</td><td><strong>Code-based password reset</strong> that also rotates the refresh token — a hijacked session dies with the old password; anti-enumeration responses on forgot/resend</td><td><code>controllers/auth.ts resetPassword, forgotPassword</code></td></tr>
+<tr><td>S9</td><td><strong>Google ID-token validation</strong> — tokeninfo check + explicit <code>aud</code> and <code>email_verified</code> assertions</td><td><code>controllers/auth.ts googleAuth</code></td></tr>
+<tr><td>S10</td><td><strong>Scoped rate limiting</strong> — auth 10 failed/15 min (successes don't count), coupon-apply keyed by userId, global 1000/15 min; refresh/logout deliberately exempt</td><td><code>middleware/rateLimiter.ts</code> · <code>routes/auth.ts</code></td></tr>
+<tr><td>S11</td><td><strong>bcrypt cost 12</strong> for every password write (register, admin create/update, Google provisioning, reset)</td><td><code>controllers/auth.ts</code>, <code>controllers/user.ts</code></td></tr>
+<tr><td>S12</td><td><strong>Coupon caps enforced at the money boundary</strong> — checkout re-validates existence/active/expiry/min-order/global/per-user, not just the preview endpoint</td><td><code>controllers/order.ts createCheckoutSession</code></td></tr>
+<tr><td>S13</td><td><strong>Atomic stock math</strong> — conditional <code>$inc</code> guarded by <code>stock ≥ qty</code> at payment; guarded revert on purchase deletion (409 instead of negative stock); weighted-average cost computed inside one document update</td><td><code>controllers/order.ts</code> · <code>controllers/purchase.ts</code></td></tr>
+<tr><td>S14</td><td><strong>Mass-assignment protection</strong> — Zod allowlists; <code>passwordHash</code>/<code>refreshTokenHash</code> unreachable; role/isActive only via dedicated audited endpoints with self-change blocks</td><td><code>validators/user.ts</code> · <code>controllers/user.ts</code></td></tr>
+<tr><td>S15</td><td><strong>Append-only audit log</strong> — schema hooks throw on update/delete; 9 action types all written; actor name denormalized; filter fields indexed</td><td><code>models/AuditLog.ts</code></td></tr>
+<tr><td>S16</td><td><strong>Uniform sanitized error envelope</strong> — every controller (incl. user.ts) routes through AppError → errorHandler; stacks logged only outside production</td><td><code>middleware/error.ts</code></td></tr>
+<tr><td>S17</td><td><strong>Input hygiene</strong> — ObjectId validation wherever user ids reach queries; regex-escape on all <code>$regex</code> searches; integer-cents money with non-negative checks and subtotal-capped discounts; review images not accepted from the body</td><td><code>utils/escapeRegex.ts</code> · controllers passim</td></tr>
+<tr><td>S18</td><td><strong>Upload limits</strong> — Multer memory storage, 5 MB/file, bounded field counts</td><td><code>routes/product.ts:16-27</code></td></tr>
+<tr><td>S19</td><td><strong>Helmet + single-origin CORS</strong> with credentials and trailing-slash normalization</td><td><code>server.ts</code></td></tr>
+<tr><td>S20</td><td><strong>Ownership checks</strong> — order detail/feedback owner-or-staff; review edit owner + 30-day window; notifications scoped to owner</td><td><code>controllers/order.ts</code>, <code>review.ts</code>, <code>notification.ts</code></td></tr>
+</tbody></table></div>
+
+<h2 id="fixed">B · Found in audit → fixed → proven (the security arc)</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Weakness found (July audit)</th><th>Fix in current code</th><th>Proof</th></tr></thead>
+<tbody>
+<tr><td>Webhook trusted unverified input — <code>express.json</code> consumed the raw body so <code>constructEvent</code> always threw and the code fell back to parsing the body; anyone with a PaymentIntent id could mark an order paid</td><td>Raw-body mount + fail-closed verification (400 on missing/invalid signature); mock mode explicitly scoped</td><td><code>test_fixes.ts</code> #3 (forged + unsigned rejected) · HTTP smoke through real middleware</td></tr>
+<tr><td>Hardcoded fallback JWT secret — worse, ESM import hoisting meant the fallback was used <em>even when .env was set</em></td><td>Lazy secret resolution honoring .env; production boot refusal without a secret</td><td><code>test_fixes.ts</code> #1 sign/verify roundtrip</td></tr>
+<tr><td>Coupon usage caps skipped at checkout (preview-only enforcement)</td><td>Full re-validation in <code>createCheckoutSession</code></td><td><code>test_fixes.ts</code> #6 — exhausted coupon rejected at checkout</td></tr>
+<tr><td>Stock race — two buyers of the last unit both passed validation; read-modify-save decrement could oversell silently</td><td>Atomic conditional <code>$inc</code>; lost race clamps to 0 with a logged oversell warning</td><td><code>test_fixes.ts</code> #4–5</td></tr>
+<tr><td>"Refunded" moved no money — <code>order.refund</code> never populated, <code>refund_decision</code> never written</td><td>Stripe/mock refund before persisting; refund subdoc + dedicated audit; 502 abort on Stripe failure</td><td><code>test_fixes.ts</code> #7</td></tr>
+<tr><td>Password reset dead-ended (console-logged link to a route that existed nowhere)</td><td>Full 6-digit code flow with session rotation on completion</td><td>Manual flow + build</td></tr>
+<tr><td>Raw error objects in <code>user.ts</code> 500 responses (driver internals leakage)</td><td>AppError pipeline end-to-end</td><td><code>test_fixes.ts</code> #9</td></tr>
+<tr><td>Low-stock resolve threw E11000 on repeat trigger/resolve cycles (over-broad unique index)</td><td>Partial unique index (active only) + boot-time <code>syncIndexes</code></td><td><code>test_fixes.ts</code> #2 — full double cycle</td></tr>
+<tr><td>Review images accepted as raw client URLs (stored-link injection surface)</td><td>Body images ignored on create/update</td><td><code>test_fixes.ts</code> #8</td></tr>
+<tr><td>Global limiter comment said 100/15 min, code said 10 000</td><td>1000/15 min, comment accurate</td><td><code>middleware/rateLimiter.ts</code></td></tr>
+</tbody></table></div>
+
+<h2 id="open">C · Genuinely still open (re-verified at HEAD)</h2>
+<div class="warn"><strong>These are the honest "what would you improve?" answers.</strong> Each was re-checked in the current code — none is stale.</div>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>Weakness</th><th>Evidence</th><th>Assessment &amp; improvement</th></tr></thead>
+<tbody>
+<tr><td>O1</td><td><strong>Account enumeration via register</strong> — existing verified emails get 409 <code>AUTH_EMAIL_IN_USE</code>, inconsistent with the anti-enumeration stance of forgot/resend; login also distinguishes deactivated (403) from wrong password (401)</td><td><code>controllers/auth.ts:101</code></td><td>Deliberate UX tradeoff for a demo storefront (a silent "code sent" confuses honest signups). State it as a conscious decision; fix = uniform response with completion only for new accounts.</td></tr>
+<tr><td>O2</td><td><strong>View events are anonymous and spoofable</strong> — <code>/product-events/batch</code> is public by design; trending flags can be inflated by a script</td><td><code>routes/productEvents.ts</code></td><td>Bounded by the 50-event batch cap + global limiter; purchase events (which drive recommendations) come only from the webhook. Improvement: per-IP limiter or a signed lightweight event token.</td></tr>
+<tr><td>O3</td><td><strong>Role changes lag up to 15 minutes</strong> — a demoted/deactivated staff account keeps admin API access until the JWT expires</td><td><code>middleware/auth.ts</code>; TTL in <code>utils/tokens.ts</code></td><td>Inherent to stateless JWTs; the short TTL is the mitigation. Optional: <code>isActive</code> re-check on the most sensitive endpoints.</td></tr>
+<tr><td>O4</td><td><strong>Hard user deletion</strong> — <code>findByIdAndDelete</code>; orders/reviews keep dangling userIds (audit trail survives via denormalized names)</td><td><code>controllers/user.ts deleteUser</code></td><td>Product decision; soft-delete (<code>isActive:false</code> + anonymize) is the listed improvement.</td></tr>
+<tr><td>O5</td><td><strong>Single-instance assumptions</strong> — in-memory rate-limit store (resets on restart, not shared) and in-process cron (double-runs if scaled out)</td><td><code>middleware/rateLimiter.ts</code> · <code>services/scheduler.ts</code></td><td>Fine at demo scale; Redis store + external scheduler are the production path.</td></tr>
+<tr><td>O6</td><td><strong>No CSRF token layer</strong> beyond <code>SameSite=Strict</code> + Bearer-header requirement — defense-in-depth gap for any future cookie-authenticated endpoint</td><td><code>controllers/auth.ts:18-23</code></td><td>Current design is safe (state-changing APIs need the header; webhook is signature-verified); add origin checks if cookie-auth surface grows.</td></tr>
+<tr><td>O7</td><td><strong>Mock modes are selected implicitly</strong> — absence of env vars silently enables mock Stripe/Cloudinary/mail; a misconfigured production deploy would run mocks without complaint (only the JWT secret fails fast)</td><td><code>controllers/order.ts isMock</code> · <code>config/cloudinary.ts</code> · <code>services/mailer.ts</code></td><td>Add production guards that refuse to boot with <code>sk_test_mock_key</code>/<code>cloudinary://mock</code> when <code>NODE_ENV=production</code>.</td></tr>
+<tr><td>O8</td><td><strong>Console logging only</strong> — morgan dev format + <code>console.*</code>; no structured logs, levels, or redaction discipline for incident forensics</td><td><code>server.ts</code>, controllers passim</td><td>pino + request ids is the standard upgrade.</td></tr>
+<tr><td>O9</td><td><strong>Purchase inputs are hand-validated</strong> (consistent with product/coupon controllers) rather than Zod-schema'd like auth/user</td><td><code>controllers/purchase.ts:53-75</code></td><td>Validation is present and correct; consistency improvement, not a hole.</td></tr>
+</tbody></table></div>
+
+<h2 id="posture">One-line posture summary</h2>
+<div class="note">The auth core (rotation, reuse detection, in-memory tokens, RBAC, append-only audit) is genuinely above student-project standard, and the July audit's serious findings — all clustered at <strong>third-party trust boundaries</strong> (the Stripe webhook, coupon revalidation, env-secret fallbacks) — were fixed and are provable live with <code>test_fixes.ts</code>. What remains open is either a conscious UX tradeoff (register enumeration), an inherent JWT property (role lag), or a scale-out concern (single-instance stores) — and the team can say exactly why for each. <em>The lesson worth presenting: the code you write is usually safer than the seams where systems meet.</em></div>
+
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team: <span class="chip haya">Haya</span> Frontend ·
+      <span class="chip mahmod">Mahmod</span> Database · <span class="chip malik">Malik</span> Backend &amp; Architecture ·
+      Every claim cites a repository file path; the current code is the only ground truth.
+    </div>
+  </div>
+</div>
+<script>
+// Highlight the TOC entry of the section in view
+const links=[...document.querySelectorAll('.toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-10% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+</script>
+</body>
+</html>

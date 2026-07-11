@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Audit — OptiCart Analysis</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:900px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.92);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:26px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:-18px 0 26px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:38px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;
+       word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .st.gray{background:rgba(148,163,184,.14);color:var(--muted)}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:12px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 16px;border-top:1px solid var(--border)}
+
+  /* ── diagrams ── */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+           padding:18px;margin:16px 0;overflow-x:auto}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram .cap{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+
+  /* ── misc ── */
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);
+               font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:0 16px 60px}
+  }
+
+  /* ── print ── */
+  @media print{
+    .sidebar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary{color:#000 !important}
+    .qa,.codeblock,.note,.warn,tr{page-break-inside:avoid}
+    details{border-color:#999}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+  }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Analysis</div>
+    <p>Source-of-truth deliverable · HEAD 175e68e</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#c1" class="">1 · Code quality — 8/10</a></li>
+    <li><a href="#c2" class="">2 · Project structure — 7/10</a></li>
+    <li><a href="#c3" class="">3 · UI/UX quality — 8.5/10</a></li>
+    <li><a href="#c4" class="">4 · Backend architecture — 9/10</a></li>
+    <li><a href="#c5" class="">5 · Database design — 9/10</a></li>
+    <li><a href="#c6" class="">6 · Security practices — 8.5/10</a></li>
+    <li><a href="#c7" class="">7 · Responsiveness — 8/10</a></li>
+    <li><a href="#c8" class="">8 · Functionality completeness — 9/10</a></li>
+    <li><a href="#c9" class="">9 · Documentation quality — 7/10</a></li>
+    <li><a href="#c10" class="">10 · Git usage — 5.5/10</a></li>
+    <li><a href="#c11" class="">11 · Clean &amp; maintainable code — 7.5/10</a></li>
+    <li><a href="#c12" class="">12 · Scalability &amp; production readiness — 6.5/10</a></li>
+    <li><a href="#summary" class="">Score summary</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>All documents</h4>
+    <a href="repo_map.html" class="">Repository Map</a>
+    <a href="feature_inventory.html" class="">Feature Inventory</a>
+    <a href="architecture_report.html" class="">Architecture Report</a>
+    <a href="tech_decisions.html" class="">Tech Decisions</a>
+    <a href="security_review.html" class="">Security Review</a>
+    <a href="project_audit.html" class="current">Project Audit</a>
+    <a href="evaluation_mapping.html" class="">Evaluation Mapping</a>
+    <a href="planning_phase.html" class="">Planning Phase</a>
+    <a href="future_feature.html" class="">Future Feature — Smart Energy Advisor</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Project Audit</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">Every instructor criterion scored /10 with file-path evidence and improvement bullets, including read-only git history inspection.</p>
+<div class="note">Every instructor criterion scored /10 with file-path evidence and 2–3 concrete improvements. Scores reflect the code at HEAD <code>175e68e</code> — several are higher than the July-10 audit because verified fixes landed since (webhook, refunds, reset password, indexes, profile page, README). Honest deductions remain honest.</div>
+
+<h2 id="c1">1 · Code quality — 8/10</h2>
+<p><strong>For:</strong> one consistent controller pattern (try → AppError → <code>next</code>) across all 15 controllers including the once-divergent <code>user.ts</code>; unusually good intent comments at the hard spots (rotation grace <code>controllers/auth.ts</code>, single-flight rationale <code>services/api.ts</code>, the <code>$map</code> pipeline explanation <code>controllers/purchase.ts:77-82</code>, CORS trailing-slash note <code>server.ts</code>); shared helpers (<code>utils/escapeRegex.ts</code>, <code>utils/apiError.ts</code>).
+<strong>Against:</strong> <code>checkAndTriggerLowStock</code> is now duplicated in <em>three</em> controllers (<code>product.ts</code>, <code>order.ts</code>, <code>purchase.ts</code>); <code>slugify</code> duplicated in two models; a few <code>as any</code> casts on middleware typings.</p>
+<ul><li>Extract the low-stock trigger and slugify into shared utils.</li><li>Type the middleware casts away (<code>rateLimiter as any</code>, Multer fields).</li></ul>
+
+<h2 id="c2">2 · Project structure — 7/10</h2>
+<p><strong>For:</strong> clean npm-workspaces monorepo; textbook backend layering (<code>config / middleware / models / routes / controllers / services / utils / validators</code>); frontend split (<code>pages / components(layout|ui) / context / services / utils</code>).
+<strong>Against:</strong> <code>pages/Inventory/Categories.tsx</code> still sits outside <code>pages/admin/</code>; <code>admin/users.tsx</code> lowercase vs sibling PascalCase; guest-wishlist helpers still live inside a page file (<code>pages/Wishlist.tsx</code>) and are imported by ShopContext; dev scripts (<code>test_*.ts</code>, <code>update_product_images.ts</code>) mixed into <code>src/</code>.</p>
+<ul><li>Move Categories under <code>pages/admin/</code>, normalize filenames.</li><li>Extract guest-wishlist helpers to <code>utils/</code>.</li><li>Relocate scripts to <code>server/scripts/</code>.</li></ul>
+
+<h2 id="c3">3 · UI/UX quality — 8.5/10</h2>
+<p><strong>For:</strong> real token design system (<code>tailwind.config.js</code>); 17 reusable components incl. DataTable/Skeleton/EmptyState/Toast; live category nav + header search synced with the URL (<code>StorefrontLayout.tsx</code>); duplicate-aware cart/wishlist messaging; reason-required cancel/refund modals; customers land on the storefront after every sign-in variant while staff land on the dashboard; scroll-to-top + page transitions; real product photography (seed Unsplash images); a complete admin shell including a real profile page and the new Purchases workflow.
+<strong>Against:</strong> announcement bar hardcodes coupon <code>OPTI10</code> which the seed doesn't create (seed ships SAVE10/FLAT50 — <code>seed.ts</code>); footer "Customer Care/Corporate" links all point at <code>/</code>.</p>
+<ul><li>Align the announcement coupon with a seeded code.</li><li>Point footer links at real routes or drop them.</li></ul>
+
+<h2 id="c4">4 · Backend architecture — 9/10</h2>
+<p><strong>For:</strong> disciplined middleware chain with a raw-body exception exactly where cryptography requires it (<code>server.ts</code>); per-route RBAC composition; uniform error envelope; two-phase payment→staff-confirm design; refunds that move money before persisting state; atomic single-document stock/cost math (webhook <code>$inc</code> guard; purchases <code>$map</code> weighted-average pipeline with compensating revert); side effects (audit/notification/email) isolated so they never fail the request; cron-precomputed recommendation cache honoring a stated design rule.
+<strong>Against:</strong> in-process cron; no service layer (controllers own business logic — fine at this size, say so if asked); implicit mock-mode selection (security O7).</p>
+<ul><li>Production boot guards against mock keys.</li><li>Idempotency keys for side effects if horizontally scaled.</li></ul>
+
+<h2 id="c5">5 · Database design — 9/10</h2>
+<p><strong>For:</strong> embed-vs-reference decisions consistently right: order items are cost-bearing <strong>snapshots</strong>; carts hold live references revalidated at read; the new <code>purchases</code> collection snapshots product/actor names so history survives deletion (<code>models/Purchase.ts:5-6</code>); index strategy is deliberate — unique compound review index, <strong>partial unique</strong> low-stock index (with boot-time <code>syncIndexes</code>), TTL-bounded events, text + compound product indexes, fully-indexed audit filters; denormalized ratingAvg/reviewCount updated transactionally with a standalone fallback; weighted-average cost maintained atomically.
+<strong>Against:</strong> the design docs describing all of this are <strong>deleted from the repo</strong> (only in git history); 14 collections vs the docs' 12 (notifications and purchases post-date them).</p>
+<ul><li>Restore the DB spec into <code>docs/</code> and update to v5 (14 collections).</li><li>Document the weighted-average cost formula where finance-minded graders can find it.</li></ul>
+
+<h2 id="c6">6 · Security practices — 8.5/10</h2>
+<p><strong>For:</strong> the full strengths table in security_review.html — rotation + reuse detection, in-memory tokens, strict-same-site cookie, fail-closed webhook, boot-time secret enforcement, RBAC, Zod allowlists, append-only audit, atomic money/stock math — plus a 20-check verification suite (<code>server/src/test_fixes.ts</code>) proving the fixes.
+<strong>Against:</strong> the open items O1–O9 (register enumeration tradeoff, anonymous view events, JWT role lag, hard deletes, single-instance stores, implicit mock modes, console logging).</p>
+<ul><li>Production mock-mode guards (O7).</li><li>Uniform register response (O1) if the enumeration tradeoff is challenged.</li></ul>
+
+<h2 id="c7">7 · Responsiveness — 8/10</h2>
+<p><strong>For:</strong> mobile-first patterns everywhere — storefront drawer with expandable category tree, admin sidebar collapse + overlay, breakpoint grids on catalog/dashboard/analytics (now 5-column KPI rows), mobile filter slide-in, a dedicated responsiveness pass in commit <code>992eaea</code>.
+<strong>Against:</strong> wide admin tables rely on <code>overflow-x-auto</code> rather than reflowing on small screens.</p>
+<ul><li>Card-collapse for admin tables under ~640 px.</li><li>Device-toolbar sweep of the new Purchases form.</li></ul>
+
+<h2 id="c8">8 · Functionality completeness — 9/10</h2>
+<p><strong>For:</strong> 22 features verified end-to-end (feature_inventory.html): full auth incl. Google + email verification + code-based reset; guest+auth commerce with merge; checkout with mock-or-real Stripe and a fail-closed webhook; staff fulfilment state machine with real refunds; verified-purchase reviews with moderation; coupons enforced at the money boundary; low-stock alerts; <strong>procurement with weighted-average costing</strong>; append-only audit; 5-series analytics; notifications; recommendations; seeded demo data with real photos.
+<strong>Against:</strong> minor dead ends (footer links, announcement coupon); no order-cancellation path for customers themselves (staff-only) — a defensible policy, but be ready to say it's deliberate.</p>
+<ul><li>Customer-initiated cancellation window while <code>pending</code>.</li><li>Purchase list filters (by product/date) as the feature grows.</li></ul>
+
+<h2 id="c9">9 · Documentation quality — 7/10</h2>
+<p><strong>For:</strong> README is now accurate (ShopContext, Router v7, real env list, five email triggers, production secret behavior) and <code>server/.env.example</code> exists with mock-friendly defaults; inline rationale comments are genuinely instructive at every hard spot; this analysis suite itself is reproducible documentation.
+<strong>Against:</strong> the two DB structure specs are deleted at HEAD; there's no endpoint reference beyond the README table; the new Purchases feature has zero prose documentation.</p>
+<ul><li>Restore/refresh the DB spec (v5, 14 collections) into <code>docs/</code>.</li><li>One-page endpoint table per router.</li><li>Short "procurement &amp; costing" doc for Purchases (the weighted-average decision deserves it).</li></ul>
+
+<h2 id="c10">10 · Git usage — 5.5/10</h2>
+<p><strong>Evidence (read-only <code>git log --all</code>, <code>git branch -a</code>):</strong> 26 commits, branches <code>main</code> + stale <code>origin/test</code>; two author identities (Mahmoud Sidawi, malik-halimeh) — <strong>no commits under Haya's own account</strong>, so her work is invisible in history. Message quality is bimodal: exemplary long-form conventional commits (<code>b9d48b3</code>, <code>de8c9cb</code>) beside <code>hi</code>, <code>ss</code>, <code>small fix</code>, and typo-laden ones. History still shows the <code>.env</code> leak-and-cleanup cycle (<code>ba03320</code>→<code>64c6488</code>) and <strong><code>server/dist/</code> build output is tracked again — 47 generated files committed</strong>, repeating the earlier revert cycle; stray <code>client/a.json</code> remains committed.</p>
+<ul><li>Stop tracking <code>server/dist</code> (gitignore + <code>git rm -r --cached server/dist</code>) — the repeat of an already-reverted mistake is the first thing a grader inspecting history will find.</li><li>All three members commit under their own accounts.</li><li>Adopt the <code>b9d48b3</code>/<code>de8c9cb</code> message style consistently; delete <code>origin/test</code> if fully merged.</li></ul>
+
+<h2 id="c11">11 · Clean &amp; maintainable code — 7.5/10</h2>
+<p><strong>For:</strong> typed schemas + exported interfaces beside every model; validators separated; a reusable UI kit; named constants (<code>ROTATION_GRACE_MS</code>, <code>VERIFICATION_CODE_TTL_MS</code>); a real verification suite (<code>test_fixes.ts</code>) guarding regressions.
+<strong>Against:</strong> several 550+ line files doing multiple jobs (<code>Products.tsx</code> 683, <code>StorefrontLayout.tsx</code> 657, <code>ProductDetail.tsx</code> 633, <code>controllers/order.ts</code> ~700); per-page fetch logic re-implemented (no shared data hook); triple-duplicated low-stock helper.</p>
+<ul><li>Split the 600-line files (nav/search/footer out of StorefrontLayout; webhook/refund out of order.ts).</li><li>A <code>useFetch</code>-style hook to kill copy-pasted loading/error state.</li></ul>
+
+<h2 id="c12">12 · Scalability &amp; production readiness — 6.5/10</h2>
+<p><strong>For:</strong> pooling + retry/fail-fast DB layer; pagination capped everywhere; TTL keeps the highest-write collection bounded; recommendations precomputed off the request path; stateless access tokens allow horizontal API scaling; integer-cents money; boot-time secret enforcement; <code>.env.example</code> for reproducible config.
+<strong>Against:</strong> in-memory rate-limit store and in-process cron break at >1 instance; console-only logging; the health check doesn't verify the DB; no Docker/CI in the repo; implicit mock-mode selection; a 546 kB client bundle (code-splitting warning in the build).</p>
+<ul><li>Redis-backed limiter + external scheduler.</li><li>pino logging + DB-aware health check.</li><li>Route-level <code>React.lazy</code> code-splitting for the admin panel.</li></ul>
+
+<h2 id="summary">Score summary</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Criterion</th><th>Score /10</th><th>Movement since July-10 audit</th></tr></thead>
+<tbody>
+<tr><td>Code quality</td><td>8</td><td>▲ 7.5 (user.ts unified; purchase pipeline exemplary; minor duplication remains)</td></tr>
+<tr><td>Project structure</td><td>7</td><td>— (same nits)</td></tr>
+<tr><td>UI/UX quality</td><td>8.5</td><td>▲ 7.5 (nav/search/profile/photos/purchases all landed)</td></tr>
+<tr><td>Backend architecture</td><td>9</td><td>▲ 8.5 (fail-closed webhook, refunds, atomic costing)</td></tr>
+<tr><td>Database design</td><td>9</td><td>▲ 8.5 (partial index, audit indexes, Purchase snapshots)</td></tr>
+<tr><td>Security practices</td><td>8.5</td><td>▲ 7.5 (audit findings fixed + proven by tests)</td></tr>
+<tr><td>Responsiveness</td><td>8</td><td>— (dedicated pass landed earlier)</td></tr>
+<tr><td>Functionality completeness</td><td>9</td><td>▲ 8 (reset, refunds, purchases, profile)</td></tr>
+<tr><td>Documentation quality</td><td>7</td><td>▲ 6.5 (README fixed, .env.example; DB docs still deleted)</td></tr>
+<tr><td>Git usage</td><td>5.5</td><td>▲ 5 (two exemplary commits; dist re-tracked drags it down)</td></tr>
+<tr><td>Clean &amp; maintainable code</td><td>7.5</td><td>▲ 7 (pipeline + tests; big files remain)</td></tr>
+<tr><td>Scalability &amp; production readiness</td><td>6.5</td><td>▲ 6 (secret fail-fast, .env.example; single-instance stores remain)</td></tr>
+<tr><td><strong>Mean</strong></td><td><strong>7.8</strong></td><td>▲ from 7.25</td></tr>
+</tbody></table></div>
+<div class="warn"><strong>Highest-value pre-presentation cleanup (no feature code involved):</strong> untrack <code>server/dist</code>, restore the DB spec docs, remove <code>client/a.json</code>, and have all three accounts appear in history. Git hygiene is the single weakest flank a grader will probe.</div>
+
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team: <span class="chip haya">Haya</span> Frontend ·
+      <span class="chip mahmod">Mahmod</span> Database · <span class="chip malik">Malik</span> Backend &amp; Architecture ·
+      Every claim cites a repository file path; the current code is the only ground truth.
+    </div>
+  </div>
+</div>
+<script>
+// Highlight the TOC entry of the section in view
+const links=[...document.querySelectorAll('.toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-10% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+</script>
+</body>
+</html>

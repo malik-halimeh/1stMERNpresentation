@@ -1,0 +1,14 @@
+%% OptiCart layered architecture — source for the inline SVG in architecture_report.html
+flowchart TD
+  A["Browser — React 19 + TS (Vite)<br/>pages → context (Auth·Shop·Toast) → services/api.ts"]
+  B["Axios instance — services/api.ts<br/>attach in-memory Bearer · 401 → single-flight refresh → retry"]
+  C["Express middleware — server.ts<br/>helmet → cors → express.raw(/api/orders/webhook) → json → cookie-parser → morgan → rate limit"]
+  D["routes/index.ts — 16 feature routers under /api"]
+  E["Feature router — authenticate + authorize(roles) + endpoint limiters + Multer"]
+  F["Controller — validation · business logic · audit writes"]
+  G["Mongoose models (14) → MongoDB<br/>unique/partial/text/TTL indexes · hooks"]
+  S["scheduler.ts<br/>cron 02:00 — recs + trending"]
+  M["mailer.ts<br/>SMTP or console stub"]
+  A --> B --> C --> D --> E --> F --> G
+  F -.side effects.-> M
+  S -.writes cache.-> G

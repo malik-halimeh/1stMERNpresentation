@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tech Decisions — OptiCart Analysis</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:900px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.92);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:26px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:-18px 0 26px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:38px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;
+       word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .st.gray{background:rgba(148,163,184,.14);color:var(--muted)}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:12px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 16px;border-top:1px solid var(--border)}
+
+  /* ── diagrams ── */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+           padding:18px;margin:16px 0;overflow-x:auto}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram .cap{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+
+  /* ── misc ── */
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);
+               font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:0 16px 60px}
+  }
+
+  /* ── print ── */
+  @media print{
+    .sidebar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary{color:#000 !important}
+    .qa,.codeblock,.note,.warn,tr{page-break-inside:avoid}
+    details{border-color:#999}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+  }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Analysis</div>
+    <p>Source-of-truth deliverable · HEAD 175e68e</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#frontend" class="">Frontend</a></li>
+    <li><a href="#react" class="h3">React 19</a></li>
+    <li><a href="#vite" class="h3">Vite 8</a></li>
+    <li><a href="#ts" class="h3">TypeScript (client ~6.0, server ^5.4)</a></li>
+    <li><a href="#tailwind" class="h3">Tailwind CSS 3.4</a></li>
+    <li><a href="#router" class="h3">React Router 7</a></li>
+    <li><a href="#context" class="h3">Context API (no Redux)</a></li>
+    <li><a href="#axios" class="h3">Axios</a></li>
+    <li><a href="#backend" class="">Backend</a></li>
+    <li><a href="#express" class="h3">Express 4</a></li>
+    <li><a href="#mongo" class="h3">Mongoose 8 + MongoDB</a></li>
+    <li><a href="#jwt" class="h3">JWT access token + rotating opaque refresh token</a></li>
+    <li><a href="#bcrypt" class="h3">bcryptjs (cost 12)</a></li>
+    <li><a href="#zod" class="h3">Zod</a></li>
+    <li><a href="#multer" class="h3">Multer 2 (memory) + Cloudinary 2</a></li>
+    <li><a href="#stripe-t" class="h3">Stripe 15 (PaymentIntents + webhook)</a></li>
+    <li><a href="#cron" class="h3">node-cron 4</a></li>
+    <li><a href="#helmet" class="h3">Helmet 7 &amp; CORS</a></li>
+    <li><a href="#ratelimit" class="h3">express-rate-limit 8</a></li>
+    <li><a href="#workspaces" class="h3">npm workspaces monorepo</a></li>
+    <li><a href="#nodemailer" class="h3">nodemailer 9 · morgan</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>All documents</h4>
+    <a href="repo_map.html" class="">Repository Map</a>
+    <a href="feature_inventory.html" class="">Feature Inventory</a>
+    <a href="architecture_report.html" class="">Architecture Report</a>
+    <a href="tech_decisions.html" class="current">Tech Decisions</a>
+    <a href="security_review.html" class="">Security Review</a>
+    <a href="project_audit.html" class="">Project Audit</a>
+    <a href="evaluation_mapping.html" class="">Evaluation Mapping</a>
+    <a href="planning_phase.html" class="">Planning Phase</a>
+    <a href="future_feature.html" class="">Future Feature — Smart Energy Advisor</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Tech Decisions</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">Per technology: why it was chosen, alternatives, tradeoffs, and a one-sentence "why not X?" answer a presenter can deliver.</p>
+<div class="note">For each technology: why it fits <em>this</em> codebase (with file evidence), the main alternatives, the honest tradeoff, and a one-sentence "why not X?" a presenter can deliver verbatim. Versions from <code>client/package.json</code> and <code>server/package.json</code>.</div>
+
+<h2 id="frontend">Frontend</h2>
+
+<h3 id="react">React 19</h3>
+<p><strong>Why:</strong> the storefront is repeated cards/tables/forms — a component model with one-way data flow (<code>client/src/components/ui/</code>, 17 reusable components); Context API covers the app's three shared concerns; the course is React-centric.
+<strong>Alternatives:</strong> Vue, Angular, Svelte. <strong>Tradeoff:</strong> more decisions left to the team than Angular; larger runtime than Svelte.</p>
+<div class="qa"><div class="q">Why not Vue or Angular?</div>"React has the largest ecosystem and hiring pool, and its one-way data flow maps cleanly onto our catalog→card→action component tree — Angular's full framework would be overhead for a storefront this size."</div>
+
+<h3 id="vite">Vite 8</h3>
+<p><strong>Why:</strong> instant dev server + HMR for a 40+-component SPA; <code>npm run build</code> = <code>tsc -b &amp;&amp; vite build</code> gives type-checking plus optimized bundles.
+<strong>Alternatives:</strong> Next.js, Webpack, CRA (dead). <strong>Tradeoff:</strong> no SSR — product pages are client-rendered even though the Product model carries SEO <code>meta</code> fields that only pay off with SSR.</p>
+<div class="qa"><div class="q">Why not Next.js?</div>"We ship a separate Express API with its own auth, cron and webhook concerns — Next's server layer would duplicate our backend; Vite gives us the fast SPA toolchain without merging the two."</div>
+
+<h3 id="ts">TypeScript (client ~6.0, server ^5.4)</h3>
+<p><strong>Why:</strong> shared shape discipline — the role union appears identically in <code>middleware/auth.ts</code> and <code>AuthContext.tsx</code>; Mongoose generics (<code>Schema&lt;IProduct&gt;</code>) catch schema/interface drift at compile time; the build doubles as the regression net (both workspaces compile clean).
+<strong>Tradeoff:</strong> build step + a few <code>as any</code> escape hatches on middleware typings.</p>
+<div class="qa"><div class="q">Why not plain JavaScript?</div>"With 14 collections and ~60 endpoints, the compiler is the only thing that tells us a renamed field broke five files — before the demo does."</div>
+
+<h3 id="tailwind">Tailwind CSS 3.4</h3>
+<p><strong>Why:</strong> a real token system in <code>tailwind.config.js</code> (brand palette, semantic colors, full type scale) so utilities compose one consistent design; purge keeps the bundle lean.
+<strong>Alternatives:</strong> CSS Modules, styled-components, MUI/Chakra. <strong>Tradeoff:</strong> long class strings; token discipline required (the config documents a bug where undefined <code>*-bg</code> tokens silently rendered transparent).</p>
+<div class="qa"><div class="q">Why not a component library like MUI?</div>"We wanted the OptiCart brand identity, not Material's — Tailwind tokens gave us a custom design system at utility-class cost."</div>
+
+<h3 id="router">React Router 7</h3>
+<p><strong>Why:</strong> route guards as plain components — <code>ProtectedRoute</code> and <code>StaffGate</code> express the entire auth/role routing policy in ~40 lines of <code>App.tsx</code>.
+<strong>Tradeoff:</strong> needs host rewrite-to-index config in production; raw <code>&lt;a&gt;</code> tags bypass it (the mobile-drawer regression that was found and fixed — everything now navigates via <code>navigate()</code>/<code>Link</code>).</p>
+<div class="qa"><div class="q">Why not TanStack Router?</div>"React Router is the course standard, and our guard logic is simple enough that its component model is the clearest expression of it."</div>
+
+<h3 id="context">Context API (no Redux)</h3>
+<p><strong>Why:</strong> exactly three shared concerns exist — session (<code>AuthContext</code>), cart badge + wishlist ids (<code>ShopContext</code>), toasts (<code>ToastContext</code>); everything else is page-local fetch state.
+<strong>Tradeoff:</strong> no request caching/dedup — pages refetch on mount; a context change re-renders all consumers.</p>
+<div class="qa"><div class="q">Why not Redux?</div>"Redux earns its boilerplate when many state slices interact; we have three independent contexts, so Redux would be ceremony without benefit."</div>
+
+<h3 id="axios">Axios</h3>
+<p><strong>Why:</strong> the whole token strategy lives in two interceptors — Bearer attachment and the single-flight 401→refresh→retry (<code>services/api.ts</code>); <code>withCredentials</code> carries the refresh cookie.
+<strong>Tradeoff:</strong> one extra dependency over fetch.</p>
+<div class="qa"><div class="q">Why not fetch?</div>"Fetch has no interceptors — we'd hand-roll the refresh-retry logic around every call; with Axios it's written once and every request inherits it."</div>
+
+<h2 id="backend">Backend</h2>
+
+<h3 id="express">Express 4</h3>
+<p><strong>Why:</strong> the middleware chain mirrors the security model 1:1 — helmet → CORS → raw-webhook mount → parsers → rate limit → routers → error handler (<code>server.ts</code>); per-route composition keeps policy visible where the route is declared (<code>authenticate, authorize, multer, controller</code>).
+<strong>Alternatives:</strong> Fastify, NestJS, Koa. <strong>Tradeoff:</strong> no built-in structure/DI — the team imposes its own layering; slower than Fastify in benchmarks that don't matter at this scale.</p>
+<div class="qa"><div class="q">Why not NestJS?</div>"Nest's decorators and DI shine on large teams with many modules; our 16 routers with explicit middleware chains are easier to audit line-by-line for a security-graded project."</div>
+
+<h3 id="mongo">Mongoose 8 + MongoDB</h3>
+<p><strong>Why:</strong> the domain is document-shaped — variants embedded in products, snapshot items embedded in orders, statusHistory as an array; schema-level integrity where it matters: unique compound review index, <strong>partial unique</strong> low-stock index, append-only audit hooks, TTL on events, text search index. The purchases feature even computes weighted-average cost <em>inside</em> a single document update via an aggregation pipeline (<code>controllers/purchase.ts</code>).
+<strong>Tradeoff:</strong> no DB-enforced foreign keys (referential rules live in controllers, e.g. product delete blocked while in active orders); multi-document transactions need a replica set (the review code carries a standalone fallback).</p>
+<div class="qa"><div class="q">Why not PostgreSQL?</div>"Our hot documents — a product with its variants, an order with its snapshot items — are read whole in one query; in SQL each would be three or four joins, and our money math is integer cents, not SQL aggregates, so we'd gain little."</div>
+
+<h3 id="jwt">JWT access token + rotating opaque refresh token</h3>
+<p><strong>Why:</strong> 15-minute stateless access tokens keep every API hop cheap; the refresh token is <em>stateful by design</em> (SHA-256 hash on the user) so sessions are revocable and <strong>theft is detectable</strong> — atomic rotation, a 30-s multi-tab grace window, and compromise-triggered global revocation (<code>controllers/auth.ts</code>).
+<strong>Tradeoff:</strong> the most intricate code in the app (the client's single-flight logic exists solely to avoid tripping our own reuse detection); access tokens can't be revoked mid-lifetime (worst case 15 min of stale role).</p>
+<div class="qa"><div class="q">Why not plain server sessions?</div>"Sessions put a DB read on every request and tie us to sticky state; our hybrid keeps requests stateless while the rotating refresh hash gives us the revocation and theft-detection that pure JWTs lack."</div>
+
+<h3 id="bcrypt">bcryptjs (cost 12)</h3>
+<p><strong>Why:</strong> adaptive salted hashing everywhere passwords are written; the pure-JS package installs with zero native toolchain — a real concern on the team's mixed Windows machines.
+<strong>Tradeoff:</strong> ~30% slower than native bcrypt; argon2 is OWASP's first pick on paper.</p>
+<div class="qa"><div class="q">Why not argon2?</div>"Argon2 is the stronger KDF on paper, but bcrypt at cost 12 is OWASP-acceptable and bcryptjs installs everywhere without a compiler — which mattered for a three-person student team."</div>
+
+<h3 id="zod">Zod</h3>
+<p><strong>Why:</strong> declarative validation whose field-level errors feed straight into the AppError envelope; the user-update validator doubles as a <strong>security allowlist</strong> — <code>passwordHash</code>/<code>refreshTokenHash</code> are unreachable and role/isActive are forced through dedicated audited endpoints (<code>validators/user.ts</code>).
+<strong>Tradeoff:</strong> only auth and user inputs are Zod-validated; product/coupon/cart/purchase controllers validate by hand — inconsistent depth, honestly acknowledged.</p>
+<div class="qa"><div class="q">Why not Joi?</div>"Zod infers the TypeScript type from the schema, so the validator and the type can never drift — with Joi both must be maintained separately."</div>
+
+<h3 id="multer">Multer 2 (memory) + Cloudinary 2</h3>
+<p><strong>Why:</strong> buffers stream straight to Cloudinary's <code>upload_stream</code> — no temp files, nothing to clean; 5 MB and field-count caps at the router; CDN delivery with stored <code>publicId</code> for future deletion; full mock mode keeps dev offline.
+<strong>Tradeoff:</strong> vendor dependency; images transit our server RAM (vs presigned direct upload).</p>
+<div class="qa"><div class="q">Why not store images locally?</div>"Local files die with the server and don't CDN; Cloudinary gives storage, transformation and CDN in one free-tier service — and mock mode keeps development offline-friendly."</div>
+
+<h3 id="stripe-t">Stripe 15 (PaymentIntents + webhook)</h3>
+<p><strong>Why:</strong> PCI burden stays with Stripe — the card form is Stripe's own element; our server only ever sees a PaymentIntent id; the webhook is the single source of payment truth, received on a raw-body route and <strong>verified fail-closed</strong> (<code>server.ts</code> + <code>controllers/order.ts</code>); refunds go back through <code>stripe.refunds.create</code>; a keyless mock mode makes the entire flow demoable.
+<strong>Tradeoff:</strong> webhook correctness is on us — which is exactly where the audit found (and the team fixed) the raw-body pitfall.</p>
+<div class="qa"><div class="q">Why not PayPal?</div>"Stripe's PaymentIntent + webhook model matches our two-phase design — capture funds, staff confirm fulfilment — and its test tooling is the best in class for a graded demo."</div>
+
+<h3 id="cron">node-cron 4</h3>
+<p><strong>Why:</strong> one idempotent nightly job (02:00) recomputes recommendations and trending flags; the design rule "never compute recommendations at request time" needs a scheduler, not a queue.
+<strong>Tradeoff:</strong> in-process — multiple instances would double-run it; a crash at 02:00 skips a day; no retry/backoff.</p>
+<div class="qa"><div class="q">Why not BullMQ?</div>"A Redis-backed queue is the right answer at scale, but for one idempotent nightly aggregation an in-process cron is zero extra infrastructure."</div>
+
+<h3 id="helmet">Helmet 7 &amp; CORS</h3>
+<p><strong>Why:</strong> one-line secure-header baseline; CORS locked to a single origin from <code>CLIENT_URL</code> with <code>credentials: true</code>, trailing slash defensively stripped because browsers match <code>Access-Control-Allow-Origin</code> exactly (<code>server.ts</code> — the comment documents the real bug class).</p>
+<div class="qa"><div class="q">Why not hand-rolled headers?</div>"Helmet encodes years of header best practice we'd otherwise have to track release by release."</div>
+
+<h3 id="ratelimit">express-rate-limit 8</h3>
+<p><strong>Why:</strong> three scoped limiters (<code>middleware/rateLimiter.ts</code>): auth 10 <em>failed</em>/15 min with <code>skipSuccessfulRequests</code> (account switching never burns budget), coupon-apply 20/15 min keyed by <strong>userId</strong>, global 1000/15 min. Deliberate placement: <code>/refresh</code> and <code>/logout</code> are exempt because interceptors fire them automatically.
+<strong>Tradeoff:</strong> in-memory store — resets on restart, not shared across instances.</p>
+<div class="qa"><div class="q">Why not a WAF or gateway limit?</div>"App-level limiting lets us key by userId and skip successful logins — semantics a generic gateway can't express."</div>
+
+<h3 id="workspaces">npm workspaces monorepo</h3>
+<p><strong>Why:</strong> one repo, two packages, root scripts, one Prettier config — atomic commits across client+server whenever an API shape changes (which is every feature here).
+<strong>Tradeoff:</strong> no task graph/caching (irrelevant at this size).</p>
+<div class="qa"><div class="q">Why not separate repos?</div>"Every feature touches both sides — one commit that changes the endpoint and the page that calls it beats two coordinated PRs every time."</div>
+
+<h3 id="nodemailer">nodemailer 9 · morgan</h3>
+<p><strong>nodemailer:</strong> SMTP-agnostic (Gmail app-password or any host) with a console-stub fallback so email flows demo without credentials; swapping providers is an env-var change. <strong>morgan:</strong> dev request logging — production would want structured logs (pino), listed as an improvement.</p>
+<div class="qa"><div class="q">Why not SendGrid's SDK?</div>"Nodemailer keeps us provider-neutral — changing providers is configuration, not code."</div>
+
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team: <span class="chip haya">Haya</span> Frontend ·
+      <span class="chip mahmod">Mahmod</span> Database · <span class="chip malik">Malik</span> Backend &amp; Architecture ·
+      Every claim cites a repository file path; the current code is the only ground truth.
+    </div>
+  </div>
+</div>
+<script>
+// Highlight the TOC entry of the section in view
+const links=[...document.querySelectorAll('.toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-10% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+</script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repository Map — OptiCart Analysis</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:900px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.92);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:26px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:-18px 0 26px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:38px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;
+       word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .st.gray{background:rgba(148,163,184,.14);color:var(--muted)}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:12px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 16px;border-top:1px solid var(--border)}
+
+  /* ── diagrams ── */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+           padding:18px;margin:16px 0;overflow-x:auto}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram .cap{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+
+  /* ── misc ── */
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);
+               font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:0 16px 60px}
+  }
+
+  /* ── print ── */
+  @media print{
+    .sidebar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary{color:#000 !important}
+    .qa,.codeblock,.note,.warn,tr{page-break-inside:avoid}
+    details{border-color:#999}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+  }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Analysis</div>
+    <p>Source-of-truth deliverable · HEAD 175e68e</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#root" class="">Monorepo root</a></li>
+    <li><a href="#server" class="">server/ — Express + TypeScript API</a></li>
+    <li><a href="#server-config" class="h3">config/ &amp; middleware/</a></li>
+    <li><a href="#server-models" class="h3">models/ — 14 collections</a></li>
+    <li><a href="#server-routes" class="h3">routes/ → controllers/ (16 mounted routers)</a></li>
+    <li><a href="#server-services" class="h3">services/, utils/, validators/, dev scripts</a></li>
+    <li><a href="#client" class="">client/ — React 19 + Vite SPA</a></li>
+    <li><a href="#client-core" class="h3">Core: entry, routing, contexts, API layer</a></li>
+    <li><a href="#client-components" class="h3">components/</a></li>
+    <li><a href="#client-pages" class="h3">pages/ — storefront &amp; admin</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>All documents</h4>
+    <a href="repo_map.html" class="current">Repository Map</a>
+    <a href="feature_inventory.html" class="">Feature Inventory</a>
+    <a href="architecture_report.html" class="">Architecture Report</a>
+    <a href="tech_decisions.html" class="">Tech Decisions</a>
+    <a href="security_review.html" class="">Security Review</a>
+    <a href="project_audit.html" class="">Project Audit</a>
+    <a href="evaluation_mapping.html" class="">Evaluation Mapping</a>
+    <a href="planning_phase.html" class="">Planning Phase</a>
+    <a href="future_feature.html" class="">Future Feature — Smart Energy Advisor</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Repository Map</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">Annotated folder structure — one line per meaningful file, responsibility derived from reading it. 14 models, 16 routers, 15 controllers, 40+ client components/pages.</p>
+<h2 id="root">Monorepo root</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>File</th><th>Responsibility (from reading it)</th></tr></thead>
+<tbody>
+<tr><td><code>package.json</code></td><td>npm-workspaces monorepo root (<code>workspaces: ["client","server"]</code>); cross-workspace scripts: <code>dev-client</code>, <code>dev-server</code>, <code>build-all</code>, <code>lint-all</code>, <code>format-all</code> (Prettier)</td></tr>
+<tr><td><code>.prettierrc</code></td><td>Shared Prettier config for both workspaces</td></tr>
+<tr><td><code>.gitignore</code></td><td>Ignores <code>node_modules/</code>, <code>dist/</code>, <code>.env</code>/<code>.env.*</code> with a <code>!.env.example</code> negation, logs, stray <code>project-structure.txt</code> files, and <code>presentation/</code></td></tr>
+<tr><td><code>README.md</code></td><td>Quick start, seed summary, per-role test credentials, test coupons, Stripe mock-mode notes, API overview, cron description, accurate env-var list (only <code>JWT_ACCESS_SECRET</code> is read for signing; production refuses to boot without it)</td></tr>
+<tr><td><code>.claude/skills/verify/SKILL.md</code></td><td>Local agent skill definition (tooling, not product code)</td></tr>
+</tbody></table></div>
+<div class="warn"><strong>[KNOWN ISSUE — repo hygiene]</strong> Two things verified at HEAD <code>175e68e</code>: (1) the design docs <code>OptiCart_Database_Structure.md</code> / <code>_v4_full.md</code> are <strong>deleted from the repo</strong> (recoverable only from older commits — they were the strongest documentation evidence); (2) <code>server/dist/</code> build output is <strong>tracked and committed</strong> again (43+ generated .js files in the last commits), repeating the earlier <code>eacc20e</code>→<code>5d1795b</code> cycle.</div>
+
+<h2 id="server">server/ — Express + TypeScript API</h2>
+<div class="kv">
+  <dt>Entry</dt><dd><code>server/src/server.ts</code> — helmet → CORS (single origin, trailing-slash stripped, credentials) → <strong><code>express.raw</code> mounted on <code>/api/orders/webhook</code> before <code>express.json</code></strong> (Stripe signature needs the exact bytes) → urlencoded → cookie-parser → morgan → global rate limiter → <code>/api</code> router → health check → notFound → errorHandler. Connects DB, runs <code>LowStockAlert.syncIndexes()</code> (drops the replaced stale index), then listens and starts cron.</dd>
+  <dt>Manifest</dt><dd><code>server/package.json</code> — Express 4, Mongoose 8, TS 5.4 (tsx dev runner), bcryptjs, jsonwebtoken, zod, multer 2, cloudinary 2, stripe 15, node-cron 4, nodemailer 9, helmet 7, express-rate-limit 8; <code>npm run seed</code></dd>
+  <dt>Seed</dt><dd><code>server/seed.ts</code> (575) — drops ALL collections (native drop for append-only auditLogs), seeds 3 users (1/role), 4 categories (2+2), 12 products with 2–3 variants and <strong>real Unsplash CDN photos</strong> (2 per product, HEAD-verified URLs), 5 orders across statuses, 8 verified-purchase reviews, 2 coupons, 1 active low-stock alert</dd>
+</div>
+
+<h3 id="server-config">config/ &amp; middleware/</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+<tbody>
+<tr><td><code>config/db.ts</code></td><td>Mongoose connect, <code>maxPoolSize: 10</code>, <code>autoIndex: true</code>; reconnect: 5 retries × 5 s then <code>process.exit(1)</code> (fail-fast for a supervisor restart); counter resets on successful connect</td></tr>
+<tr><td><code>config/cloudinary.ts</code></td><td>Cloudinary v2; <strong>mock mode</strong> when <code>CLOUDINARY_URL</code> is missing/<code>cloudinary://mock</code>; <code>uploadImageBuffer()</code> streams Multer memory buffers via <code>upload_stream</code></td></tr>
+<tr><td><code>middleware/auth.ts</code></td><td><code>authenticate</code> (Bearer JWT → <code>req.user {userId, role}</code>) + <code>authorize(...roles)</code> RBAC guard; extends the Express Request type</td></tr>
+<tr><td><code>middleware/error.ts</code></td><td><code>errorHandler</code> maps AppError / Mongoose ValidationError (400) / JWT errors (401) to the uniform <code>{success:false, error:{code,message,details}}</code> envelope; stack logged only outside production; <code>notFound</code> → 404 AppError</td></tr>
+<tr><td><code>middleware/rateLimiter.ts</code></td><td>Three scoped limiters: auth 10 <em>failed</em>/15 min (<code>skipSuccessfulRequests</code>); coupon-apply 20/15 min keyed by <strong>userId</strong>; global <strong>1000/15 min per IP</strong> (comment and code agree)</td></tr>
+</tbody></table></div>
+
+<h3 id="server-models">models/ — 14 collections</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Model</th><th>Key design points (all schema-verified)</th></tr></thead>
+<tbody>
+<tr><td><code>User.ts</code></td><td>email unique · role enum(3) · <code>refreshTokenHash</code> + <code>prevRefreshTokenHash</code>/expiry (30 s rotation grace) · email-verification code hash + TTL · <strong>password-reset code hash + TTL</strong> · <code>authProvider</code> local|google · addresses[]</td></tr>
+<tr><td><code>Product.ts</code></td><td>slug unique (pre-validate slugify) · embedded <code>variants[]</code> {sku, color, size, capacity, stock, priceDeltaCents, <strong>costPriceCents</strong>, lowStockThreshold, optional per-variant image} · denormalized ratingAvg/reviewCount · isTrending/isMostSelling · text index (name+searchKeywords) · compound (categoryId, basePriceCents) · virtual reviews populate</td></tr>
+<tr><td><code>Category.ts</code></td><td>Self-referencing 2-level tree via <code>parentId</code>; slug unique + slugify hook</td></tr>
+<tr><td><code>Cart.ts</code> / <code>Wishlist.ts</code></td><td>1:1 user (unique index); cart items {productId, variantSku, quantity≥1, priceAtAddCents}; wishlist productIds[]</td></tr>
+<tr><td><code>Order.ts</code></td><td>orderNumber unique · snapshot items {name, variantSku, unitPriceCents, <strong>unitCostCents</strong>, quantity} · statusHistory[] with <code>updatedBy</code> · <code>refund</code> subdoc (status/reason/approvedBy/approvedAt/stripeRefundId — <strong>populated by the refund flow</strong>) · <code>feedback</code> subdoc · compound (status, createdAt)</td></tr>
+<tr><td><code>Coupon.ts</code></td><td>code unique + uppercase pre-validate · percentage|fixed · min-order · global usageLimit + perUserLimit · <code>usedBy[]</code> {userId, count}</td></tr>
+<tr><td><code>Review.ts</code></td><td>orderId required (verified-purchase proof) · <strong>unique (userId, productId)</strong> · isFlagged/isRemoved soft flags · 30-day edit window (app-enforced)</td></tr>
+<tr><td><code>LowStockAlert.ts</code></td><td><strong>Partial unique index (productId, variantSku) filtered to status:'active'</strong> — one active alert per variant, unlimited resolved history (the old 3-field unique index broke repeat resolves; fixed + <code>syncIndexes</code> at boot)</td></tr>
+<tr><td><code>Purchase.ts</code> <span class="st info">NEW</span></td><td>Stock procurement record: productId + <strong>productName snapshot</strong> (survives product deletion), variantSku, quantity, unitCostCents, precomputed totalCostCents, note, createdBy + name snapshot; <code>createdAt:-1</code> index for lists/summaries</td></tr>
+<tr><td><code>AuditLog.ts</code></td><td>Append-only (pre-hooks throw on update/delete) · <strong>9 action types</strong> incl. <code>stock_purchase</code> and <code>refund_decision</code> (both actually written) · polymorphic target · changeDelta {before, after} · indexes: timestamp, actorId, actionType, targetEntityId</td></tr>
+<tr><td><code>Notification.ts</code></td><td>In-app bell entries per order status change; (userId, createdAt desc) index</td></tr>
+<tr><td><code>ProductEvent.ts</code></td><td>view|cart_add|purchase analytics feed · compound (userId, eventType, timestamp) · <strong>TTL 180 days</strong></td></tr>
+<tr><td><code>ProductRecommendation.ts</code></td><td>Precomputed cache: productId unique → top-10 recommendedProductIds; written only by the nightly cron</td></tr>
+</tbody></table></div>
+
+<h3 id="server-routes">routes/ → controllers/ (16 mounted routers)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Mounted at</th><th>Endpoints (method · access)</th><th>Controller highlights</th></tr></thead>
+<tbody>
+<tr><td><code>/api/auth</code></td><td>POST register, verify-email, resend-verification, google, login, forgot-password, <strong>reset-password</strong> (all behind the strict auth limiter); POST refresh, logout (deliberately NOT rate-limited — interceptors fire them automatically); GET/PATCH profile</td><td><code>controllers/auth.ts</code> (556) — code-based signup verification, atomic refresh rotation + 30 s grace + reuse revocation, Google tokeninfo validation, code-based password reset that also rotates the refresh token</td></tr>
+<tr><td><code>/api/products</code></td><td>GET / (public: category id/slug+children, price $→cents, rating, sort, inStock, text search, ≤100/page), GET /by-ids, GET /:slug; POST/PATCH/DELETE staff (Multer fields images≤5 / variantImages≤20, 5 MB)</td><td><code>controllers/product.ts</code> — delete blocked while in active orders; stock PATCH writes <code>stock_update</code> audit; per-variant photos matched by <code>imageSlot</code></td></tr>
+<tr><td><code>/api/categories</code></td><td>GET public 2-level tree; POST/PATCH/DELETE staff</td><td>self-parent guard; delete blocked while children exist</td></tr>
+<tr><td><code>/api/cart</code></td><td>GET, POST /items, PATCH/DELETE /items/:productId, POST /merge — all roles authenticated</td><td>GET revalidates lines live (drops deleted products, flags priceChanged/outOfStock); merge = max(quantity) capped by stock</td></tr>
+<tr><td><code>/api/wishlist</code></td><td>GET, POST /merge, POST/DELETE /:productId</td><td>duplicate-aware add returns <code>alreadyInWishlist</code></td></tr>
+<tr><td><code>/api/coupons</code></td><td>POST /apply (per-user rate-limited preview); staff GET/POST/PATCH/DELETE</td><td>apply validates active/expiry/min-order/global/per-user; all CUD audited (<code>coupon_cud</code>)</td></tr>
+<tr><td><code>/api/reviews</code></td><td>GET /product/:id public; GET / staff moderation; POST/PATCH owner; DELETE staff</td><td>verified purchase = delivered order; Mongo transaction w/ standalone sequential fallback; soft remove + audit; <strong>body images ignored</strong></td></tr>
+<tr><td><code>/api/orders</code></td><td>POST /webhook (public, raw body); GET /, POST /checkout-session, GET /status/:pi, GET /:id, POST /:id/feedback; PATCH /:id/status staff</td><td><code>controllers/order.ts</code> (~700) — fail-closed webhook, atomic stock decrement, full coupon re-validation at checkout, refund with Stripe/mock + <code>refund_decision</code> audit, state machine with terminal lock + required reasons</td></tr>
+<tr><td><code>/api/purchases</code> <span class="st info">NEW</span></td><td>GET /summary (month KPIs), GET /, POST /, DELETE /:id — staff only</td><td><code>controllers/purchase.ts</code> (338) — single aggregation-pipeline update adds stock AND recomputes <strong>weighted-average cost</strong> atomically; compensating revert if the Purchase insert fails; guarded stock revert on delete (409 if stock would go negative); <code>stock_purchase</code> audits</td></tr>
+<tr><td><code>/api/low-stock</code></td><td>GET (status filter), PATCH /:id/resolve — staff</td><td>resolve writes a <code>stock_update</code> audit</td></tr>
+<tr><td><code>/api/audit-logs</code></td><td>GET — super_admin; actor/type/target/date filters</td><td>read-only; all four filters now index-backed</td></tr>
+<tr><td><code>/api/product-recommendations</code></td><td>GET — public, cache read only</td><td>fallback chain isMostSelling → isTrending → newest</td></tr>
+<tr><td><code>/api/product-events</code></td><td>POST /batch — public, ≤50/batch, validated</td><td>inline in the route file; anonymous-friendly (no authenticate → client views carry <code>userId: null</code>)</td></tr>
+<tr><td><code>/api/users</code></td><td>GET/POST/PUT/DELETE, PATCH /:id/role, PATCH /:id/status — super_admin only</td><td><code>controllers/user.ts</code> — Zod allowlists, sensitive fields stripped, self-change blocks, role/status/delete audited, full AppError pipeline</td></tr>
+<tr><td><code>/api/analytics</code></td><td>GET revenue, top-skus, order-volume, <strong>purchase-spend</strong> <span class="st info">NEW</span>, customer-growth — super_admin</td><td>aggregation pipelines; revenue from delivered orders; daily/weekly bucketing</td></tr>
+<tr><td><code>/api/notifications</code></td><td>GET own (+unread count), PATCH /read-all</td><td>bell feed created on every staff status change</td></tr>
+</tbody></table></div>
+
+<h3 id="server-services">services/, utils/, validators/, dev scripts</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+<tbody>
+<tr><td><code>services/mailer.ts</code></td><td>Lazy nodemailer transport (Gmail app-password or generic SMTP, console stub without credentials); sends signup codes, <strong>password-reset codes</strong>, order confirmation, status changes (+reason), low-stock alerts to all active inventory managers</td></tr>
+<tr><td><code>services/scheduler.ts</code></td><td>node-cron daily 02:00: (A) co-occurrence recommendation engine — purchase-event pairs weighted by recency decay <code>1/(daysSince+1)</code>, top-10/product upserted into the cache; (B) 7-day trending/most-selling flag updater (top-8 each, reset-then-set)</td></tr>
+<tr><td><code>utils/tokens.ts</code></td><td>15-min JWT access tokens; opaque 40-byte refresh tokens; SHA-256 hashing; <strong>secret resolved lazily</strong> (ESM imports hoist above <code>dotenv.config()</code>, so a module-load read would always miss .env) with a production boot refusal when <code>JWT_ACCESS_SECRET</code> is missing</td></tr>
+<tr><td><code>utils/errors.ts</code> / <code>utils/escapeRegex.ts</code></td><td><code>AppError(code, message, status, details)</code>; regex-metacharacter escaping used by every <code>$regex</code> search (orders, users, reviews)</td></tr>
+<tr><td><code>validators/auth.ts</code> / <code>validators/user.ts</code></td><td>Zod: register/login/forgot/reset (email + 6-digit code + password policy); admin user create/update <strong>allowlists</strong> — passwordHash/refreshTokenHash unreachable, role/isActive forced through dedicated audited endpoints</td></tr>
+<tr><td><code>src/test_fixes.ts</code></td><td>20-check verification suite for the 2026-07 hardening pass (tsx-run, DB-backed, self-cleaning <code>fixtest</code> fixtures) — fail-closed webhook, mock-payment E2E, atomic stock, coupon-limit bypass rejection, refund record + audit, low-stock index cycle, lazy JWT, review-image drop, user.ts error pipeline</td></tr>
+<tr><td><code>src/test_auth.ts</code>, <code>test_core_apis.ts</code>, <code>verify_db.ts</code>, <code>check_orders.ts</code></td><td>Earlier manual verification scripts (tsx against a live DB) — no automated test framework exists</td></tr>
+<tr><td><code>src/update_product_images.ts</code></td><td>One-off script that swaps placeholder images for the Unsplash photos on a <strong>live</strong> database in place (no re-seed, orders/users preserved)</td></tr>
+</tbody></table></div>
+
+<h2 id="client">client/ — React 19 + Vite SPA</h2>
+<div class="kv">
+  <dt>Manifest</dt><dd><code>client/package.json</code> — React 19, React Router 7, Axios, lucide-react, @stripe/react-stripe-js; dev: Vite 8, TypeScript ~6.0, Tailwind 3.4, ESLint 10</dd>
+  <dt>Design tokens</dt><dd><code>tailwind.config.js</code> — brand orange <code>#EA580C</code> palette, semantic colors, full type scale (display→caption), late-added <code>*-bg</code> tint tokens</dd>
+  <dt>Build</dt><dd><code>vite.config.ts</code> minimal (React plugin only); API base from <code>VITE_API_URL</code></dd>
+</div>
+
+<h3 id="client-core">Core: entry, routing, contexts, API layer</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+<tbody>
+<tr><td><code>src/main.tsx</code></td><td>Root render: <code>AuthProvider → ShopProvider → ToastProvider → App</code> under StrictMode</td></tr>
+<tr><td><code>src/App.tsx</code> (~300)</td><td>All routing: <code>ProtectedRoute</code> (auth + role guard with <code>?redirect=</code> preservation), <code>StaffGate</code> (staff bounced off the storefront), per-path admin routes incl. <strong>/admin/purchases</strong> and a real <strong>/admin/profile</strong>, scroll-to-top on navigation, keyed fade-slide page transition, catch-all → home</td></tr>
+<tr><td><code>src/services/api.ts</code></td><td>Axios with credentials; <strong>in-memory access token</strong>; request interceptor attaches Bearer; <strong>single-flight refresh promise</strong>; 401 response interceptor awaits the shared refresh then replays; refresh failure → <code>/login?redirect=…</code></td></tr>
+<tr><td><code>src/context/AuthContext.tsx</code></td><td>Session state; mount-time silent refresh gated by a localStorage hint; <code>sessionEpochRef</code> staleness guard; login / register→verify-code / resend / Google / <strong>resetPassword</strong> / logout</td></tr>
+<tr><td><code>src/context/ShopContext.tsx</code></td><td>Cart badge count + wishlist id set; guest (localStorage) vs authenticated (server) branching; duplicate-aware add helpers</td></tr>
+<tr><td><code>src/context/ToastContext.tsx</code></td><td>Toast queue (success/error/warning/info)</td></tr>
+<tr><td><code>src/utils/guestCart.ts</code> / <code>guestMerge.ts</code> / <code>apiError.ts</code></td><td>Guest cart snapshots in localStorage; post-sign-in merge of cart + wishlist then local clear; AppError-envelope message extraction for toasts</td></tr>
+</tbody></table></div>
+
+<h3 id="client-components">components/</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+<tbody>
+<tr><td><code>layout/StorefrontLayout.tsx</code> (657)</td><td>Two-row sticky header: logo + <strong>header search</strong> (submits to <code>/products?search=…</code>, synced with the URL param) + bell/avatar/wishlist/cart badges; category nav row fed by <strong>live <code>GET /categories</code> data navigating by slug</strong> (180 ms debounced hover dropdowns with a hit-area bridge); SPA mobile drawer with expandable subcategory tree; footer with contact info + inline-SVG social icons (lucide dropped brand glyphs)</td></tr>
+<tr><td><code>layout/AdminLayout.tsx</code></td><td>Collapsible role-filtered sidebar (Users/Audit/Analytics = super_admin only; <strong>Purchases</strong> item for all staff), mobile drawer, top bar with profile menu</td></tr>
+<tr><td><code>ui/</code> (17 files)</td><td>Design-system kit: Button, Input, Card, Badge, Modal, Toast, Skeleton, DataTable (sortable/paginated), ColumnChart (SVG analytics charts), ProductCard, NotificationBell (unread badge + mark-all-read), SearchBox, Breadcrumb, EmptyState, GoogleSignInButton</td></tr>
+</tbody></table></div>
+
+<h3 id="client-pages">pages/ — storefront &amp; admin</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Page</th><th>Responsibility</th></tr></thead>
+<tbody>
+<tr><td><code>Home.tsx</code></td><td>Hero, category tiles, top-rated + newest strips (inStock only), recommendation strip</td></tr>
+<tr><td><code>ProductList.tsx</code></td><td>URL-param-driven catalog: category (API slugs incl. children), price min/max, min rating, 4 sorts, search, 12/page pagination, mobile filter drawer</td></tr>
+<tr><td><code>ProductDetail.tsx</code></td><td>Slug fetch, variant selector w/ per-variant photos, hover zoom, paginated reviews + verified submission, recommendations, batched view events</td></tr>
+<tr><td><code>Cart.tsx</code> / <code>Checkout.tsx</code> / <code>CheckoutRedirect.tsx</code> / <code>OrderConfirmation.tsx</code></td><td>Guest+auth cart with server revalidation warnings and coupon preview; address book + Stripe PaymentElement or MockPaymentForm; status polling; confirmation summary</td></tr>
+<tr><td><code>AccountDashboard.tsx</code> / <code>OrderDetail.tsx</code> / <code>Wishlist.tsx</code></td><td>Own orders (<code>?scope=mine</code>), profile + address CRUD, wishlist; order timeline from statusHistory + feedback + per-item review entry</td></tr>
+<tr><td><code>Login.tsx</code> / <code>Register.tsx</code> / <code>ForgotPassword.tsx</code></td><td>Customers land on the storefront after any successful sign-in (redirects into auth pages are ignored); staff land on /admin/dashboard; register has a 6-digit verify step; forgot-password is a full two-step code + new-password flow</td></tr>
+<tr><td><code>admin/Dashboard.tsx</code></td><td>KPI tiles (orders, pending, low-stock actives, products, coupons, <strong>month purchase spend</strong> via /purchases/summary) + recent orders table</td></tr>
+<tr><td><code>admin/Products.tsx</code> (683)</td><td>Catalog CRUD with multipart FormData (JSON variants + gallery + per-variant <code>imageSlot</code> photos)</td></tr>
+<tr><td><code>admin/Purchases.tsx</code> (387) <span class="st info">NEW</span></td><td>Procurement: record stock purchases (product/variant picker, quantity, unit cost, note), month-to-date KPIs, history list, delete-with-stock-revert</td></tr>
+<tr><td><code>admin/Orders.tsx</code> / <code>LowStock.tsx</code> / <code>Coupons.tsx</code> / <code>Reviews.tsx</code> / <code>users.tsx</code> / <code>AuditLogs.tsx</code> / <code>Analytics.tsx</code> / <code>Profile.tsx</code></td><td>Fulfilment queue (status filter, search, reason-required cancel/refund); alert resolve; coupon CRUD + toggle; review moderation; super-admin user management; read-only audit trail; 5 KPI cards + 4 charts incl. <strong>purchase-spend trend</strong>; profile settings (identity card + name editing via PATCH /auth/profile)</td></tr>
+<tr><td><code>Inventory/Categories.tsx</code></td><td>Category tree CRUD — still located outside <code>pages/admin/</code> <span class="st gray">STRUCTURE INCONSISTENCY</span>; <code>admin/users.tsx</code> lowercase filename likewise</td></tr>
+</tbody></table></div>
+
+<div class="note"><strong>Scale snapshot</strong> (verified counts at HEAD <code>175e68e</code>): 14 Mongoose models · 16 mounted routers · 15 controllers · 17 reusable UI components · 22 routed pages · 3 contexts · ~60 API endpoints. Everything runs offline with mock Stripe/Cloudinary/mail and a local MongoDB.</div>
+
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team: <span class="chip haya">Haya</span> Frontend ·
+      <span class="chip mahmod">Mahmod</span> Database · <span class="chip malik">Malik</span> Backend &amp; Architecture ·
+      Every claim cites a repository file path; the current code is the only ground truth.
+    </div>
+  </div>
+</div>
+<script>
+// Highlight the TOC entry of the section in view
+const links=[...document.querySelectorAll('.toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-10% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+</script>
+</body>
+</html>

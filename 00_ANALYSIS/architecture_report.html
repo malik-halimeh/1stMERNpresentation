@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture Report — OptiCart Analysis</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:900px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.92);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:26px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:-18px 0 26px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:38px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;
+       word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .st.gray{background:rgba(148,163,184,.14);color:var(--muted)}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:12px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 16px;border-top:1px solid var(--border)}
+
+  /* ── diagrams ── */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+           padding:18px;margin:16px 0;overflow-x:auto}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram .cap{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+
+  /* ── misc ── */
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);
+               font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:0 16px 60px}
+  }
+
+  /* ── print ── */
+  @media print{
+    .sidebar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary{color:#000 !important}
+    .qa,.codeblock,.note,.warn,tr{page-break-inside:avoid}
+    details{border-color:#999}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+  }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Analysis</div>
+    <p>Source-of-truth deliverable · HEAD 175e68e</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#layers" class="">Layered architecture</a></li>
+    <li><a href="#lifecycle" class="">Request lifecycle (worked example)</a></li>
+    <li><a href="#auth-flow" class="">Complete auth flow</a></li>
+    <li><a href="#auth-login" class="h3">Login → session</a></li>
+    <li><a href="#auth-refresh" class="h3">Single-flight refresh · rotation · reuse detection</a></li>
+    <li><a href="#auth-silent" class="h3">Silent refresh · 401 retry · RBAC</a></li>
+    <li><a href="#auth-reset" class="h3">Password reset (code flow)</a></li>
+    <li><a href="#errors" class="">Error-handling pipeline</a></li>
+    <li><a href="#db" class="">Database connection resilience</a></li>
+    <li><a href="#scheduler" class="">Scheduler</a></li>
+    <li><a href="#mailer" class="">Mailer</a></li>
+    <li><a href="#stripe" class="">Stripe flow</a></li>
+    <li><a href="#cloudinary" class="">Cloudinary flow</a></li>
+    <li><a href="#purchases-arch" class="">Purchases — the atomic pipeline update</a></li>
+    <li><a href="#frontend-arch" class="">Frontend architecture notes</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>All documents</h4>
+    <a href="repo_map.html" class="">Repository Map</a>
+    <a href="feature_inventory.html" class="">Feature Inventory</a>
+    <a href="architecture_report.html" class="current">Architecture Report</a>
+    <a href="tech_decisions.html" class="">Tech Decisions</a>
+    <a href="security_review.html" class="">Security Review</a>
+    <a href="project_audit.html" class="">Project Audit</a>
+    <a href="evaluation_mapping.html" class="">Evaluation Mapping</a>
+    <a href="planning_phase.html" class="">Planning Phase</a>
+    <a href="future_feature.html" class="">Future Feature — Smart Energy Advisor</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Architecture Report</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">Layered architecture, full request lifecycle, complete auth flow, error pipeline, DB resilience, scheduler, mailer, Stripe and Cloudinary flows.</p>
+<h2 id="layers">Layered architecture</h2>
+<div class="diagram">
+<svg viewBox="0 0 760 470" width="760" height="470" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,Segoe UI" font-size="13">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#94A3B8"/></marker></defs>
+  <g text-anchor="middle">
+    <rect x="180" y="10" width="400" height="44" rx="9" fill="#1E293B" stroke="#0D9488" stroke-width="1.5"/>
+    <text x="380" y="29" fill="#E2E8F0" font-weight="700">Browser — React 19 + TypeScript (Vite)</text>
+    <text x="380" y="45" fill="#94A3B8" font-size="11">pages/ → context/ (Auth · Shop · Toast) → services/api.ts</text>
+    <line x1="380" y1="54" x2="380" y2="72" stroke="#94A3B8" marker-end="url(#ar)"/>
+    <rect x="180" y="74" width="400" height="44" rx="9" fill="#1E293B" stroke="#EA580C" stroke-width="1.5"/>
+    <text x="380" y="93" fill="#E2E8F0" font-weight="700">Axios instance — client/src/services/api.ts</text>
+    <text x="380" y="109" fill="#94A3B8" font-size="11">attach in-memory Bearer · 401 → single-flight refresh → retry</text>
+    <line x1="380" y1="118" x2="380" y2="136" stroke="#94A3B8" marker-end="url(#ar)"/>
+    <rect x="120" y="138" width="520" height="58" rx="9" fill="#1E293B" stroke="#EA580C" stroke-width="1.5"/>
+    <text x="380" y="157" fill="#E2E8F0" font-weight="700">Express middleware chain — server/src/server.ts</text>
+    <text x="380" y="173" fill="#94A3B8" font-size="11">helmet → cors(CLIENT_URL, credentials) → express.raw(/api/orders/webhook)</text>
+    <text x="380" y="188" fill="#94A3B8" font-size="11">→ express.json → urlencoded → cookie-parser → morgan → rate limiter (1000/15 min)</text>
+    <line x1="380" y1="196" x2="380" y2="214" stroke="#94A3B8" marker-end="url(#ar)"/>
+    <rect x="180" y="216" width="400" height="40" rx="9" fill="#1E293B" stroke="#334155"/>
+    <text x="380" y="241" fill="#E2E8F0" font-weight="700">routes/index.ts — 16 feature routers under /api</text>
+    <line x1="380" y1="256" x2="380" y2="274" stroke="#94A3B8" marker-end="url(#ar)"/>
+    <rect x="120" y="276" width="520" height="44" rx="9" fill="#1E293B" stroke="#334155"/>
+    <text x="380" y="295" fill="#E2E8F0" font-weight="700">Feature router — per-route authenticate + authorize(...roles)</text>
+    <text x="380" y="311" fill="#94A3B8" font-size="11">+ endpoint rate limiters + Multer where uploads exist</text>
+    <line x1="380" y1="320" x2="380" y2="338" stroke="#94A3B8" marker-end="url(#ar)"/>
+    <rect x="180" y="340" width="400" height="40" rx="9" fill="#1E293B" stroke="#334155"/>
+    <text x="380" y="365" fill="#E2E8F0" font-weight="700">Controller — validation · business logic · audit writes</text>
+    <line x1="380" y1="380" x2="380" y2="398" stroke="#94A3B8" marker-end="url(#ar)"/>
+    <rect x="180" y="400" width="400" height="44" rx="9" fill="#1E293B" stroke="#8B5CF6" stroke-width="1.5"/>
+    <text x="380" y="419" fill="#E2E8F0" font-weight="700">Mongoose models (14) → MongoDB</text>
+    <text x="380" y="435" fill="#94A3B8" font-size="11">schema validation · hooks · unique/partial/text/TTL indexes</text>
+    <rect x="12" y="276" width="96" height="72" rx="9" fill="#0B1222" stroke="#0D9488"/>
+    <text x="60" y="303" fill="#2DD4BF" font-size="11" font-weight="700">scheduler</text>
+    <text x="60" y="318" fill="#94A3B8" font-size="10">cron 02:00</text>
+    <text x="60" y="333" fill="#94A3B8" font-size="10">recs + flags</text>
+    <rect x="652" y="276" width="96" height="72" rx="9" fill="#0B1222" stroke="#0D9488"/>
+    <text x="700" y="303" fill="#2DD4BF" font-size="11" font-weight="700">mailer</text>
+    <text x="700" y="318" fill="#94A3B8" font-size="10">SMTP or</text>
+    <text x="700" y="333" fill="#94A3B8" font-size="10">console stub</text>
+  </g>
+</svg>
+<div class="cap">Request path top→down; scheduler and mailer are side channels called from controllers/jobs, never from the request chain. Mermaid source: <code>diagrams/architecture.mmd</code></div>
+</div>
+
+<h2 id="lifecycle">Request lifecycle (worked example)</h2>
+<p><code>GET /api/products?search=fridge</code>:</p>
+<ol>
+<li>A page calls <code>api.get('/products?…')</code>; the request interceptor attaches <code>Authorization: Bearer &lt;memory token&gt;</code> if one exists (<code>services/api.ts:23-32</code>) — this endpoint is public, so it also works without one.</li>
+<li>Express runs the global middleware stack; the rate limiter counts the request (<code>server.ts</code>).</li>
+<li><code>routes/index.ts</code> dispatches to the product router → <code>getProducts</code>.</li>
+<li>The controller builds a filter object (category slug→children expansion, dollar→cents price conversion, <code>$text</code> search), runs <code>countDocuments</code> + a paged <code>find</code>, and responds <code>{success, data, meta:{total,page,limit,pages}}</code> (<code>controllers/product.ts:42-134</code>).</li>
+<li>Any thrown error reaches <code>next(error)</code> → <code>errorHandler</code> → the uniform envelope <code>{success:false, error:{code,message,details}}</code>.</li>
+</ol>
+
+<h2 id="auth-flow">Complete auth flow</h2>
+<h3 id="auth-login">Login → session</h3>
+<p><code>POST /auth/login</code> (<code>controllers/auth.ts</code>): Zod validation → bcrypt compare (cost 12) → <code>isActive</code> check → email-verified check (unverified users get a fresh code + 403) → <code>respondWithSession</code>:</p>
+<ul>
+<li>signs a <strong>15-minute JWT access token</strong> (<code>utils/tokens.ts</code>) — the client keeps it in a module variable, never in storage (<code>services/api.ts:6-11</code>);</li>
+<li>generates an <strong>opaque refresh token</strong> (<code>crypto.randomBytes(40)</code>), stores only its SHA-256 hash on the user;</li>
+<li>sets cookie <code>refreshToken = "&lt;userId&gt;:&lt;token&gt;"</code> — <code>httpOnly</code>, <code>secure</code> in production, <code>sameSite:'strict'</code>, 7 days.</li>
+</ul>
+
+<h3 id="auth-refresh">Single-flight refresh · rotation · reuse detection</h3>
+<div class="codeblock"><div class="path">server/src/controllers/auth.ts — the atomic rotation core</div>
+<pre><code>// Happy path — atomic rotation: the hash match is part of the query, so
+// of N concurrent refreshes carrying the same token exactly one rotates.
+const rotated = await User.findOneAndUpdate(
+  { _id: userId, refreshTokenHash: incomingHash },
+  {
+    refreshTokenHash: hashString(newRefreshToken),
+    prevRefreshTokenHash: incomingHash,
+    prevRefreshTokenExpiresAt: new Date(Date.now() + ROTATION_GRACE_MS), // 30 s
+  },
+  { new: true }
+);</code></pre></div>
+<ul>
+<li><strong>Grace path:</strong> a token that was <em>just</em> rotated away by a concurrent tab is still accepted for a fresh access token (no re-rotation) within the 30-second window.</li>
+<li><strong>Reuse detection:</strong> any other presentation of an old token nulls every refresh hash, clears the cookie, and returns 403 <code>AUTH_SESSION_COMPROMISED</code> — full re-login required.</li>
+<li><strong>Client single-flight:</strong> one shared <code>refreshPromise</code> (<code>services/api.ts:38-66</code>) so the mount-time silent refresh, StrictMode double-mount, and any number of concurrent 401 retries all await the <em>same</em> rotation — a second parallel refresh would trip the server's own reuse detection.</li>
+</ul>
+
+<h3 id="auth-silent">Silent refresh · 401 retry · RBAC</h3>
+<ul>
+<li><strong>Silent refresh on mount</strong> (<code>AuthContext.tsx</code>): skipped for guests via a localStorage hint (avoids a doomed 401 per anonymous page load); a <code>sessionEpochRef</code> counter makes stale refresh results no-ops so a slow failing refresh can't wipe a session a login just created.</li>
+<li><strong>401 retry interceptor</strong> (<code>services/api.ts:69-103</code>): on 401 (excluding auth endpoints, <code>_retry</code>-guarded) awaits the shared refresh and replays the original request; on refresh failure, hard-redirects to <code>/login?redirect=&lt;path&gt;</code>.</li>
+<li><strong>RBAC:</strong> <code>authenticate</code> verifies the Bearer JWT into <code>req.user {userId, role}</code>; JWT errors map to distinct 401 codes in the error handler; <code>authorize(...roles)</code> returns 403 <code>AUTH_FORBIDDEN</code>. Every feature router declares its roles inline.</li>
+</ul>
+
+<h3 id="auth-reset">Password reset (code flow)</h3>
+<p><code>forgot-password</code> emails a 6-digit code (hash + 15-min TTL on the user; identical response whether the account exists — anti-enumeration); <code>reset-password</code> validates email + code + password policy via Zod, re-hashes, clears the code, marks the email verified, and opens a session through <code>respondWithSession</code> — which rotates the refresh token and thereby <strong>revokes any session an attacker held before the password change</strong> (<code>controllers/auth.ts resetPassword</code>).</p>
+
+<h2 id="errors">Error-handling pipeline</h2>
+<p><code>AppError(code, message, statusCode, details[])</code> (<code>utils/errors.ts</code>) is thrown by controllers → <code>errorHandler</code> (<code>middleware/error.ts</code>) maps AppError / Mongoose <code>ValidationError</code> (400) / <code>JsonWebTokenError</code> + <code>TokenExpiredError</code> (401) / everything else (500) into <code>{success:false, error:{code,message,details}}</code>; stacks log only outside production. <code>notFound</code> converts unmatched routes to 404 AppErrors. The client mirror <code>utils/apiError.ts</code> unwraps the envelope for toasts. Every controller — including <code>user.ts</code> — routes failures through this pipeline; no handler responds with raw error objects.</p>
+
+<h2 id="db">Database connection resilience</h2>
+<p><code>config/db.ts</code>: <code>maxPoolSize: 10</code>, <code>autoIndex: true</code>; on <code>disconnected</code>, up to <strong>5 retries at 5-second intervals</strong>, counter reset on success, then <code>process.exit(1)</code> — fail-fast so a supervisor restarts the process. The server listens only after the initial connect resolves, and boot also runs <code>LowStockAlert.syncIndexes()</code> to drop the replaced stale index (autoIndex only creates, never removes — <code>server.ts</code>).</p>
+
+<h2 id="scheduler">Scheduler</h2>
+<p>One daily node-cron job at 02:00 (<code>services/scheduler.ts</code>, registered at startup):</p>
+<ul>
+<li><strong>A — Co-occurrence engine:</strong> loads purchase ProductEvents with a userId, groups per user, dedupes per product keeping the best recency weight <code>1/(daysSince+1)</code>, accumulates pair weights across users, upserts the top-10 neighbours per product into the cache. Reads at request time come exclusively from that cache.</li>
+<li><strong>B — Trending flags:</strong> 7-day windows — top-8 by ordered quantity → <code>isMostSelling</code>; top-8 by view events → <code>isTrending</code> (reset-then-set).</li>
+</ul>
+<div class="note">Stated scaling limit: the cron runs in-process — multiple API instances would double-run it, and a crash at 02:00 skips a day. Acceptable for one idempotent nightly aggregation; a queue is the growth path (see project_audit).</div>
+
+<h2 id="mailer">Mailer</h2>
+<p><code>services/mailer.ts</code> builds its transport <strong>lazily on first send</strong> — deliberate, because ESM imports hoist above <code>dotenv.config()</code>, so a module-load env read would miss .env (the same pitfall that was found and fixed in <code>utils/tokens.ts</code>). Priority: Gmail app-password → generic SMTP → console stub. Five message types (signup code, reset code, order confirmation, status change + reason, low-stock to all active managers); all sends are fire-and-forget with logged failures.</p>
+
+<h2 id="stripe">Stripe flow</h2>
+<ol>
+<li><strong>Session:</strong> <code>POST /orders/checkout-session</code> snapshots the cart with live stock checks, fully re-validates any coupon (incl. usage caps), creates a PaymentIntent (or mock ids when keyless), persists a draft <code>pending</code> order whose items snapshot <code>unitCostCents</code> for margin math.</li>
+<li><strong>Payment:</strong> real mode renders Stripe's <code>PaymentElement</code>; mock mode renders <code>MockPaymentForm</code>, which itself posts the fake <code>payment_intent.succeeded</code> event (<code>Checkout.tsx</code>).</li>
+<li><strong>Webhook — fail-closed:</strong> the route receives the <strong>raw Buffer</strong> (mounted with <code>express.raw</code> before <code>express.json</code>, <code>server.ts</code>). With a real key + <code>STRIPE_WEBHOOK_SECRET</code>, a missing or invalid signature is rejected with 400 (<code>WEBHOOK_SIGNATURE_MISSING/INVALID</code>) — an unsigned payload can never mark an order paid. Mock/dev mode parses the JSON buffer as-is.</li>
+<li><strong>On success (idempotent via the paymentStatus guard):</strong> atomic conditional stock decrement (<code>$inc</code> guarded by <code>stock ≥ qty</code>; lost races clamp to 0 with an oversell warning), coupon <code>usedBy</code> increment, cart clear, purchase ProductEvents, confirmation email. The order <strong>stays pending until staff confirm</strong> — payment captures funds; fulfilment is a human decision.</li>
+<li><strong>Refund:</strong> <code>status → refunded</code> calls <code>stripe.refunds.create</code> (mock id in mock mode) <em>before</em> persisting, fills <code>order.refund</code>, and writes a <code>refund_decision</code> audit; failure aborts with 502 <code>REFUND_FAILED</code>.</li>
+</ol>
+
+<h2 id="cloudinary">Cloudinary flow</h2>
+<p>Multer <strong>memory storage</strong> (5 MB/file; <code>images</code> ≤5, <code>variantImages</code> ≤20 — <code>routes/product.ts</code>); buffers stream through <code>cloudinary.uploader.upload_stream</code> (<code>config/cloudinary.ts</code>) storing <code>{url: secure_url, publicId}</code>; per-variant photos match variants by an <code>imageSlot</code> index in the variant JSON. Without <code>CLOUDINARY_URL</code> the service returns deterministic mock URLs so the whole flow works offline. JSON-only PATCH requests pass through Multer untouched.</p>
+
+<h2 id="purchases-arch">Purchases — the atomic pipeline update</h2>
+<p>The newest subsystem (<code>controllers/purchase.ts</code>) solves a classic inventory problem — adding stock while recomputing the <strong>weighted-average unit cost</strong> — without a transaction, using a single aggregation-pipeline <code>findOneAndUpdate</code>:</p>
+<div class="codeblock"><div class="path">server/src/controllers/purchase.ts — one document operation, no read-then-write race</div>
+<pre><code>// newCost = (oldStock*oldCost + qty*unitCost) / (oldStock + qty), computed
+// INSIDE MongoDB via a $map over variants (the positional $ can't do math).
+// { new: false } returns the PRE-update doc → before/after audit for free.
+const preUpdate = await Product.findOneAndUpdate(
+  { _id: productId, 'variants.sku': sku },
+  [ { $set: { variants: { $map: { /* $cond on sku → $mergeObjects:
+        stock: $add, costPriceCents: weighted average with $round */ } } } } ],
+  { new: false }
+);</code></pre></div>
+<p>A compensating revert restores stock/cost if the Purchase insert fails afterwards; deletion reverts stock with the same guarded <code>$gte</code> pattern as the webhook and refuses (409) when stock would go negative. Cost is intentionally not reverted on delete — a weighted average is not invertible, and the comment says so.</p>
+
+<h2 id="frontend-arch">Frontend architecture notes</h2>
+<ul>
+<li><strong>State:</strong> Context API only — Auth (session), Shop (cart badge + wishlist ids with guest/auth branching), Toast. Pages own their fetch state; no query cache.</li>
+<li><strong>Guest commerce:</strong> localStorage cart/wishlist snapshots; <code>utils/guestMerge.ts</code> posts both merges after any successful sign-in, then clears local copies; the server resolves quantity conflicts with <code>max(quantity)</code> capped at stock.</li>
+<li><strong>Routing:</strong> public storefront, <code>ProtectedRoute</code> for customer pages, per-path admin routes under <code>AdminContentRoute</code>, <code>StaffGate</code> keeping staff on <code>/admin/*</code>, scroll-to-top + fade-slide transition per navigation, catch-all → home (<code>App.tsx</code>).</li>
+<li><strong>Design system:</strong> Tailwind token theme (<code>tailwind.config.js</code>) + 17 reusable <code>ui/</code> components; lucide icons (with hand-inlined SVG brand glyphs in the footer since lucide dropped them).</li>
+</ul>
+
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team: <span class="chip haya">Haya</span> Frontend ·
+      <span class="chip mahmod">Mahmod</span> Database · <span class="chip malik">Malik</span> Backend &amp; Architecture ·
+      Every claim cites a repository file path; the current code is the only ground truth.
+    </div>
+  </div>
+</div>
+<script>
+// Highlight the TOC entry of the section in view
+const links=[...document.querySelectorAll('.toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-10% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+</script>
+</body>
+</html>

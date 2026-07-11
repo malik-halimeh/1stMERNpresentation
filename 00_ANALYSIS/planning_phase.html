@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planning Phase — OptiCart Analysis</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:900px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.92);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:26px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:-18px 0 26px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:38px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;
+       word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .st.gray{background:rgba(148,163,184,.14);color:var(--muted)}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:12px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 16px;border-top:1px solid var(--border)}
+
+  /* ── diagrams ── */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+           padding:18px;margin:16px 0;overflow-x:auto}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram .cap{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+
+  /* ── misc ── */
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);
+               font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:0 16px 60px}
+  }
+
+  /* ── print ── */
+  @media print{
+    .sidebar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary{color:#000 !important}
+    .qa,.codeblock,.note,.warn,tr{page-break-inside:avoid}
+    details{border-color:#999}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+  }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Analysis</div>
+    <p>Source-of-truth deliverable · HEAD 175e68e</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#fr" class="">Functional requirements (derived from implemented features)</a></li>
+    <li><a href="#nfr" class="">Non-functional requirements (with implementation evidence)</a></li>
+    <li><a href="#roles" class="">Roles &amp; permissions matrix (verified per route file)</a></li>
+    <li><a href="#erd" class="">Data model — 14 collections as implemented</a></li>
+    <li><a href="#indexes" class="h3">Index inventory (all schema-declared, verified)</a></li>
+    <li><a href="#sprints" class="">Sprint plan — RECONSTRUCTED — Jira CSVs NOT FOUND</a></li>
+    <li><a href="#decisions" class="">Key pre-development technical decisions</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>All documents</h4>
+    <a href="repo_map.html" class="">Repository Map</a>
+    <a href="feature_inventory.html" class="">Feature Inventory</a>
+    <a href="architecture_report.html" class="">Architecture Report</a>
+    <a href="tech_decisions.html" class="">Tech Decisions</a>
+    <a href="security_review.html" class="">Security Review</a>
+    <a href="project_audit.html" class="">Project Audit</a>
+    <a href="evaluation_mapping.html" class="">Evaluation Mapping</a>
+    <a href="planning_phase.html" class="current">Planning Phase</a>
+    <a href="future_feature.html" class="">Future Feature — Smart Energy Advisor</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Planning Phase</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">Functional + non-functional requirements, roles/permissions matrix, ERD narrative of all 14 collections with the full index list, sprint reconstruction, and pre-development decisions.</p>
+<div class="warn"><strong>Source honesty:</strong> the requested <code>OptiCart_Jira_Import*.csv</code> files are <strong>[NOT FOUND]</strong> — absent from the working tree and from the entire git history (verified with <code>git log --all --name-only --diff-filter=A -- '*Jira*' '*.csv'</code>, zero results). The sprint plan below is therefore <strong>reconstructed from git history and the versioned design docs</strong> and must be presented as such. The pre-development DB specs (<code>OptiCart_Database_Structure*.md</code>, referencing a "OptiCart_BRD_v1.0" that is also not in the repo) are deleted at HEAD but readable in git history — they remain the best evidence that data-model planning preceded implementation.</div>
+
+<h2 id="fr">Functional requirements (derived from implemented features)</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Group</th><th>Requirements (each verified in code — see feature_inventory.html for paths)</th></tr></thead>
+<tbody>
+<tr><td><strong>FR-1 Accounts</strong></td><td>Email+password registration with mandatory 6-digit email verification; login/logout with 7-day persistent sessions surviving reloads; Google sign-in with auto-provisioning; profile + multi-address book with a single default; two-step code-based password reset that revokes prior sessions</td></tr>
+<tr><td><strong>FR-2 Catalog</strong></td><td>Variant-level products (price delta, stock, cost, per-variant photo); browse/filter by 2-level category, price range, min rating; 4 sort orders; full-text search from a persistent header box; sold-out items hidden from the storefront but visible to staff</td></tr>
+<tr><td><strong>FR-3 Shopping</strong></td><td>Guest cart &amp; wishlist in localStorage merged on sign-in (max-quantity conflict rule, stock-capped); live cart revalidation (price-change / out-of-stock warnings); coupons (percentage/fixed, expiry, min-order, global + per-user caps) enforced at both preview and checkout</td></tr>
+<tr><td><strong>FR-4 Checkout &amp; orders</strong></td><td>Stripe PaymentIntent + signature-verified webhook (keyless mock mode for demos); order items snapshot name/price/<strong>cost</strong>; two-phase fulfilment — payment captures, staff confirm; state machine with terminal lock and reason-required cancel/refund; refunds move money via Stripe and are separately audited; customer order history, timeline, and one order-experience feedback</td></tr>
+<tr><td><strong>FR-5 Reviews</strong></td><td>Verified purchase only (delivered order), one per user/product (index-enforced), 30-day edit window, staff soft-remove moderation</td></tr>
+<tr><td><strong>FR-6 Inventory ops (staff)</strong></td><td>Product/category/coupon CRUD with guards; auto low-stock alerts (one active per variant, emailed to managers, resolvable); fulfilment queue with filters/search; <strong>stock procurement</strong>: record purchases that add stock and recompute weighted-average unit cost atomically, month-to-date spend KPIs, delete-with-guarded-revert</td></tr>
+<tr><td><strong>FR-7 Governance (super admin)</strong></td><td>User management (create/edit/role/status/delete — self-change blocked, all audited); append-only audit trail with actor/type/target/date filters; analytics: revenue, top SKUs, order volume, customer growth, purchase spend (7–365-day windows)</td></tr>
+<tr><td><strong>FR-8 Engagement</strong></td><td>In-app notifications per status change; transactional emails (5 triggers); nightly-computed "customers also bought" + trending/most-selling flags</td></tr>
+</tbody></table></div>
+
+<h2 id="nfr">Non-functional requirements (with implementation evidence)</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>NFR</th><th>Requirement</th><th>Evidence</th></tr></thead>
+<tbody>
+<tr><td>NFR-1 Security</td><td>Hashed credentials; revocable, theft-detecting sessions; RBAC; rate limits; validated input; fail-closed payment boundary</td><td>security_review.html §A</td></tr>
+<tr><td>NFR-2 Integrity</td><td>Integer-cents money; immutable order snapshots; append-only audit; atomic stock/cost math</td><td><code>models/Order.ts</code>, <code>models/AuditLog.ts</code>, <code>controllers/purchase.ts</code></td></tr>
+<tr><td>NFR-3 Performance</td><td>Read-path indexes (text, compound, partial); recommendations precomputed off-request; pagination ≤100</td><td><code>models/Product.ts</code>, <code>services/scheduler.ts</code></td></tr>
+<tr><td>NFR-4 Resilience</td><td>DB retry/reconnect with fail-fast exit; side effects never fail requests; compensating revert on partial failure</td><td><code>config/db.ts</code>, <code>controllers/order.ts</code>, <code>controllers/purchase.ts:166-179</code></td></tr>
+<tr><td>NFR-5 Cost control</td><td>Free-tier aware: TTL-bounded event collection, client-side view batching, one cron job, keyless mock modes for every paid service</td><td><code>models/ProductEvent.ts:44</code>, <code>ProductDetail.tsx</code>, v4 doc §3.10 (git history)</td></tr>
+<tr><td>NFR-6 Usability</td><td>Responsive to mobile; skeletons/empty states; duplicate-aware actions; role-appropriate landing after sign-in</td><td>project_audit §3, §7</td></tr>
+</tbody></table></div>
+
+<h2 id="roles">Roles &amp; permissions matrix (verified per route file)</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Capability</th><th>Guest</th><th>Customer</th><th>Inventory Manager</th><th>Super Admin</th><th>Route evidence</th></tr></thead>
+<tbody>
+<tr><td>Browse/search catalog, categories, reviews, recommendations</td><td>✔</td><td>✔</td><td>✔*</td><td>✔*</td><td><code>routes/product.ts</code>, <code>category.ts</code>, <code>review.ts</code>, <code>recommendation.ts</code></td></tr>
+<tr><td>Local (guest) cart &amp; wishlist</td><td>✔</td><td>—</td><td>—</td><td>—</td><td><code>utils/guestCart.ts</code>, <code>pages/Wishlist.tsx</code></td></tr>
+<tr><td>Server cart / wishlist / merge · coupon preview · checkout · own orders/feedback · own notifications · own reviews</td><td>✖</td><td>✔</td><td>✔</td><td>✔</td><td><code>routes/cart.ts</code>, <code>wishlist.ts</code>, <code>coupon.ts:9-15</code>, <code>order.ts</code>, <code>notification.ts</code>, <code>review.ts:20-21</code></td></tr>
+<tr><td>Product / category / coupon CRUD · all orders + status transitions · low-stock view/resolve · review moderation · <strong>purchases</strong></td><td>✖</td><td>✖</td><td>✔</td><td>✔</td><td><code>routes/product.ts</code>, <code>category.ts</code>, <code>coupon.ts:18-21</code>, <code>order.ts:31</code>, <code>lowStock.ts</code>, <code>review.ts:17,24</code>, <code>purchase.ts:8</code></td></tr>
+<tr><td>User management · audit logs (read) · analytics</td><td>✖</td><td>✖</td><td>✖</td><td>✔</td><td><code>routes/user.ts:16</code>, <code>auditLog.ts:8</code>, <code>analytics.ts:13</code></td></tr>
+</tbody></table></div>
+<p>* Staff can call storefront APIs, but the UI bounces them to <code>/admin/dashboard</code> from any storefront route (<code>App.tsx</code> StaffGate) — a recorded product decision (commit <code>b9d48b3</code>).</p>
+
+<h2 id="erd">Data model — 14 collections as implemented</h2>
+<div class="diagram">
+<svg viewBox="0 0 780 400" width="780" height="400" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,Segoe UI" font-size="12">
+  <g text-anchor="middle">
+    <rect x="330" y="16" width="120" height="38" rx="8" fill="#1E293B" stroke="#EA580C" stroke-width="1.5"/><text x="390" y="39" fill="#fff" font-weight="700">users</text>
+    <rect x="60" y="110" width="120" height="38" rx="8" fill="#1E293B" stroke="#334155"/><text x="120" y="133" fill="#E2E8F0">carts · wishlists</text>
+    <rect x="330" y="110" width="120" height="38" rx="8" fill="#1E293B" stroke="#EA580C" stroke-width="1.5"/><text x="390" y="133" fill="#fff" font-weight="700">orders</text>
+    <rect x="600" y="110" width="120" height="38" rx="8" fill="#1E293B" stroke="#334155"/><text x="660" y="133" fill="#E2E8F0">reviews</text>
+    <rect x="60" y="204" width="120" height="38" rx="8" fill="#1E293B" stroke="#334155"/><text x="120" y="227" fill="#E2E8F0">categories ↺</text>
+    <rect x="330" y="204" width="120" height="38" rx="8" fill="#1E293B" stroke="#8B5CF6" stroke-width="1.5"/><text x="390" y="227" fill="#fff" font-weight="700">products</text>
+    <rect x="600" y="204" width="120" height="38" rx="8" fill="#1E293B" stroke="#334155"/><text x="660" y="227" fill="#E2E8F0">coupons</text>
+    <rect x="24" y="310" width="130" height="38" rx="8" fill="#0B1222" stroke="#0D9488"/><text x="89" y="333" fill="#2DD4BF">lowStockAlerts</text>
+    <rect x="172" y="310" width="118" height="38" rx="8" fill="#0B1222" stroke="#0D9488"/><text x="231" y="333" fill="#2DD4BF">purchases ★</text>
+    <rect x="308" y="310" width="118" height="38" rx="8" fill="#0B1222" stroke="#0D9488"/><text x="367" y="333" fill="#2DD4BF">auditLogs 🔒</text>
+    <rect x="444" y="310" width="118" height="38" rx="8" fill="#0B1222" stroke="#0D9488"/><text x="503" y="333" fill="#2DD4BF">notifications</text>
+    <rect x="580" y="310" width="90" height="38" rx="8" fill="#0B1222" stroke="#0D9488"/><text x="625" y="329" fill="#2DD4BF" font-size="11">product</text><text x="625" y="342" fill="#2DD4BF" font-size="11">Events ⏳</text>
+    <rect x="686" y="310" width="88" height="38" rx="8" fill="#0B1222" stroke="#0D9488"/><text x="730" y="329" fill="#2DD4BF" font-size="11">product</text><text x="730" y="342" fill="#2DD4BF" font-size="11">Recs ⚡</text>
+  </g>
+  <g stroke="#94A3B8" stroke-width="1" fill="none" opacity=".8">
+    <path d="M355 54 L140 110"/><path d="M390 54 L390 110"/><path d="M425 54 L640 110"/>
+    <path d="M120 204 L120 148" stroke-dasharray="4 3"/>
+    <path d="M180 223 L330 223"/>
+    <path d="M390 204 L390 148" stroke-dasharray="4 3"/><path d="M450 129 L600 129"/>
+    <path d="M450 223 L600 223" stroke-dasharray="4 3"/>
+    <path d="M340 242 L110 310"/><path d="M360 242 L240 310"/><path d="M400 242 L620 310"/><path d="M420 242 L722 310"/>
+  </g>
+  <g fill="#94A3B8" font-size="10" font-family="system-ui">
+    <text x="240" y="86">1:1</text><text x="396" y="86">1:N</text><text x="540" y="86">1:N</text>
+    <text x="250" y="217">N:1</text><text x="520" y="122">verified-purchase gate</text>
+    <text x="470" y="215">snapshot items · coupon by code</text>
+    <text x="128" y="190">2-level tree</text>
+  </g>
+</svg>
+<div class="cap">Core (slate) · operational/analytics (teal). ★ new procurement collection · 🔒 append-only · ⏳ TTL 180 d · ⚡ nightly-written cache. Dashed = live reference; solid = ownership/snapshot. Mermaid source: <code>diagrams/erd.mmd</code></div>
+</div>
+<p><strong>Relationship narrative:</strong> <code>users</code> 1—N <code>orders</code>/<code>reviews</code>/<code>notifications</code>/<code>auditLogs</code>(actor), 1—1 <code>carts</code>/<code>wishlists</code>. <code>categories</code> self-reference two levels and classify <code>products</code>. <code>products</code> embed <code>variants[]</code> (sku, stock, priceDelta, <strong>costPriceCents</strong>, threshold, photo) and are live-referenced by carts but <strong>snapshotted</strong> into order items (name/price/cost) — products mutate, orders must not. <code>coupons</code> are value-referenced by code string for a human-readable audit trail. <code>reviews</code> carry <code>orderId</code> as the verified-purchase proof. <code>purchases</code> snapshot product and actor names so procurement history survives deletion. <code>auditLogs</code> use a polymorphic target (<code>targetEntityType</code> + id). <code>productEvents</code> feed the nightly engine that writes the <code>productRecommendations</code> cache.</p>
+
+<h3 id="indexes">Index inventory (all schema-declared, verified)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Collection</th><th>Indexes</th></tr></thead>
+<tbody>
+<tr><td>users</td><td><code>email</code> unique</td></tr>
+<tr><td>categories</td><td><code>slug</code> unique</td></tr>
+<tr><td>products</td><td><code>slug</code> unique · <code>categoryId</code> · text(<code>name, searchKeywords</code>) · compound <code>(categoryId, basePriceCents)</code></td></tr>
+<tr><td>carts / wishlists</td><td><code>userId</code> unique</td></tr>
+<tr><td>orders</td><td><code>orderNumber</code> unique · <code>userId</code> · <code>status</code> · compound <code>(status, createdAt)</code></td></tr>
+<tr><td>coupons</td><td><code>code</code> unique</td></tr>
+<tr><td>reviews</td><td><code>productId</code> · <strong>unique <code>(userId, productId)</code></strong></td></tr>
+<tr><td>lowStockAlerts</td><td><code>productId</code> · <strong>partial unique <code>(productId, variantSku)</code> where <code>status:'active'</code></strong></td></tr>
+<tr><td>purchases</td><td><code>productId</code> · <code>createdAt:-1</code></td></tr>
+<tr><td>auditLogs</td><td><code>timestamp</code> · <code>actorId</code> · <code>actionType</code> · <code>targetEntityId</code></td></tr>
+<tr><td>notifications</td><td><code>userId</code> · compound <code>(userId, createdAt desc)</code></td></tr>
+<tr><td>productEvents</td><td>compound <code>(userId, eventType, timestamp)</code> · <strong>TTL <code>timestamp</code> 180 d</strong></td></tr>
+<tr><td>productRecommendations</td><td><code>productId</code> unique</td></tr>
+</tbody></table></div>
+
+<h2 id="sprints">Sprint plan — <span class="st bad">RECONSTRUCTED — Jira CSVs NOT FOUND</span></h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Phase</th><th>Scope (commit evidence)</th><th>Focus</th></tr></thead>
+<tbody>
+<tr><td><strong>Sprint 0 — Planning &amp; foundation</strong></td><td>BRD v1.0 (referenced by the DB docs), DB spec iterations v1→v4, repo bootstrap + gitignore/.env hygiene cycles (<code>47d1f44</code>…<code>21cb44d</code>)</td><td><span class="chip mahmod">Mahmod</span> data model · <span class="chip malik">Malik</span> scaffolding · <span class="chip haya">Haya</span> design tokens</td></tr>
+<tr><td><strong>Sprint 1 — Auth core</strong></td><td>Full auth system: register/login/refresh rotation/logout (<code>ab31544</code>)</td><td><span class="chip malik">Malik</span> backend · <span class="chip haya">Haya</span> auth pages</td></tr>
+<tr><td><strong>Sprint 2 — Commerce core</strong></td><td>Catalog, cart, wishlist, checkout, orders, admin inventory (<code>1e25f09</code>)</td><td>All three, split per the presenter matrix</td></tr>
+<tr><td><strong>Sprint 3 — Hardening &amp; ops</strong></td><td>Rate-limiter fix (<code>c5bf67b</code>), search/pagination/audit-text fixes (<code>116d117</code>), sensitive-file cleanup (<code>64c6488</code>)</td><td><span class="chip malik">Malik</span> · <span class="chip mahmod">Mahmod</span></td></tr>
+<tr><td><strong>Sprint 4 — UX &amp; fulfilment polish</strong></td><td>StaffGate, guest merge, pending-until-confirmed, notifications, per-variant images (<code>b9d48b3</code>); pricing/stock fixes; header/scroll + responsiveness + code-based reset (<code>5620779</code>, <code>992eaea</code>)</td><td>All three</td></tr>
+<tr><td><strong>Sprint 5 — Security hardening &amp; procurement</strong></td><td>Fail-closed webhook, real refunds, atomic stock, lazy secret, test suite (<code>de8c9cb</code>); <strong>Purchases feature</strong> with weighted-average costing + analytics spend (<code>71c8cfd</code>); header/footer polish + real photos (<code>175e68e</code>)</td><td><span class="chip malik">Malik</span> · <span class="chip mahmod">Mahmod</span> · <span class="chip haya">Haya</span></td></tr>
+</tbody></table></div>
+
+<h2 id="decisions">Key pre-development technical decisions</h2>
+<ol>
+<li><strong>MERN + TypeScript workspaces monorepo</strong> — from the initial scaffold (<code>package.json</code>).</li>
+<li><strong>Explicit embed-vs-reference rules</strong> — the v4 doc's decision rule ("embed when bounded, read-with-parent, not independently queried; reference otherwise") predates the code; the code follows it, including the later Purchase collection (separate, name-snapshotted).</li>
+<li><strong>Integer cents for all money</strong> — <code>basePriceCents</code>, <code>priceDeltaCents</code>, <code>costPriceCents</code>, <code>unitCostCents</code> from the first schema.</li>
+<li><strong>Order-item snapshotting</strong> — called "the single most important modeling decision" in v4 §3.6; implemented verbatim and later extended to purchases.</li>
+<li><strong>Hybrid auth: short-lived JWT + rotating hashed refresh token</strong> — present since Sprint 1 (<code>ab31544</code>).</li>
+<li><strong>Flat 3-role RBAC</strong> — v4 explicitly rejects a permissions collection and reverts a 4th delivery-agent role as out of BRD scope.</li>
+<li><strong>Recommendations precomputed on a schedule, never at request time</strong> — v4 §3.10-3.11 defines the events→cache pipeline, TTL and client batching; all three exist in code.</li>
+<li><strong>Mock-mode-first integrations</strong> — Stripe/Cloudinary/mail all run keyless for development and graded demos.</li>
+</ol>
+
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team: <span class="chip haya">Haya</span> Frontend ·
+      <span class="chip mahmod">Mahmod</span> Database · <span class="chip malik">Malik</span> Backend &amp; Architecture ·
+      Every claim cites a repository file path; the current code is the only ground truth.
+    </div>
+  </div>
+</div>
+<script>
+// Highlight the TOC entry of the section in view
+const links=[...document.querySelectorAll('.toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-10% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+</script>
+</body>
+</html>

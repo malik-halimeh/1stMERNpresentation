@@ -1,0 +1,25 @@
+%% OptiCart data model — 14 collections as implemented (source for the inline SVG in planning_phase.html)
+erDiagram
+  USERS ||--o{ ORDERS : places
+  USERS ||--o| CARTS : owns
+  USERS ||--o| WISHLISTS : owns
+  USERS ||--o{ REVIEWS : writes
+  USERS ||--o{ NOTIFICATIONS : receives
+  USERS ||--o{ AUDIT_LOGS : "acts as actor"
+  USERS ||--o{ PRODUCT_EVENTS : "generates (nullable)"
+  USERS ||--o{ PURCHASES : records
+
+  CATEGORIES ||--o{ CATEGORIES : "parent/child (2 levels)"
+  CATEGORIES ||--o{ PRODUCTS : classifies
+
+  PRODUCTS ||--o{ REVIEWS : receives
+  PRODUCTS ||--o{ LOW_STOCK_ALERTS : triggers
+  PRODUCTS ||--o{ PRODUCT_EVENTS : "viewed/carted/purchased"
+  PRODUCTS ||--o{ PURCHASES : "restocked by (name snapshot)"
+  PRODUCTS ||--o| PRODUCT_RECOMMENDATIONS : "cached for"
+
+  CARTS }o--o{ PRODUCTS : "live reference"
+  ORDERS }o--o{ PRODUCTS : "snapshot items (name/price/cost)"
+  ORDERS }o--o| COUPONS : "value-ref by code"
+  ORDERS ||--o| REVIEWS : "verified-purchase gate"
+  ORDERS ||--o{ NOTIFICATIONS : "status changes"

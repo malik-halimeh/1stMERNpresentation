@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Future Feature — Smart Energy Advisor — OptiCart Analysis</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:900px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.92);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:26px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:-18px 0 26px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:38px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;
+       word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .st.gray{background:rgba(148,163,184,.14);color:var(--muted)}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:12px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 16px;border-top:1px solid var(--border)}
+
+  /* ── diagrams ── */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+           padding:18px;margin:16px 0;overflow-x:auto}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .diagram .cap{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+
+  /* ── misc ── */
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);
+               font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:0 16px 60px}
+  }
+
+  /* ── print ── */
+  @media print{
+    .sidebar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary{color:#000 !important}
+    .qa,.codeblock,.note,.warn,tr{page-break-inside:avoid}
+    details{border-color:#999}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+  }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Analysis</div>
+    <p>Source-of-truth deliverable · HEAD 175e68e</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#what" class="">What it is</a></li>
+    <li><a href="#why" class="">Why this feature (justification)</a></li>
+    <li><a href="#why-domain" class="h3">a · Appliances are the domain — energy is the #1 hidden purchase factor</a></li>
+    <li><a href="#why-lebanon" class="h3">b · Uniquely valuable in Lebanon</a></li>
+    <li><a href="#why-cheap" class="h3">c · Technically cheap — verified against the current code</a></li>
+    <li><a href="#why-moat" class="h3">d · Defensible differentiator + native upsell path</a></li>
+    <li><a href="#impl" class="">Concrete implementation path (4 small steps + 1 stretch)</a></li>
+    <li><a href="#risks" class="">Risks &amp; honest caveats (say these before you're asked)</a></li>
+    <li><a href="#qa" class="">Anticipated questions</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>All documents</h4>
+    <a href="repo_map.html" class="">Repository Map</a>
+    <a href="feature_inventory.html" class="">Feature Inventory</a>
+    <a href="architecture_report.html" class="">Architecture Report</a>
+    <a href="tech_decisions.html" class="">Tech Decisions</a>
+    <a href="security_review.html" class="">Security Review</a>
+    <a href="project_audit.html" class="">Project Audit</a>
+    <a href="evaluation_mapping.html" class="">Evaluation Mapping</a>
+    <a href="planning_phase.html" class="">Planning Phase</a>
+    <a href="future_feature.html" class="current">Future Feature — Smart Energy Advisor</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Future Feature — Smart Energy Advisor</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">Per-appliance kWh specs → estimated yearly running cost under Lebanese EDL + generator pricing, with filter/sort by total cost of ownership. Verified against the current schema and filter pipeline.</p>
+<div class="note"><strong>The pitch in one sentence:</strong> "OptiCart stops selling appliances by their price tag and starts selling them by what they actually cost a Lebanese household — a number no competitor shows, computed from fields we can add to our existing schema in an afternoon."</div>
+
+<h2 id="what">What it is</h2>
+<p>Store per-appliance <strong>energy-consumption specs (kWh/year)</strong> and show every customer the <strong>estimated yearly running cost under Lebanese electricity conditions</strong> — the EDL grid tariff plus the private generator (<em>moteur</em>) subscription — then let shoppers <strong>filter and sort by total cost of ownership (TCO)</strong> instead of sticker price, with a user-adjustable grid/generator hours split (state-power hours vary by region).</p>
+<div class="codeblock"><div class="path">The calculator</div>
+<pre><code>yearlyCostCents = kWhPerYear × (gridShare × edlTariffCents + generatorShare × generatorTariffCents)
+fiveYearTCO     = basePriceCents + 5 × yearlyCostCents</code></pre></div>
+
+<h2 id="why">Why this feature (justification)</h2>
+<h3 id="why-domain">a · Appliances are the domain — energy is the #1 hidden purchase factor</h3>
+<p>The catalog is refrigerators, ovens, cooktops, microwaves, dishwashers (<code>server/seed.ts</code> — OptiCool/OptiChef lines; categories "Major/Small Appliances"). A refrigerator runs 24/7 for a decade — the sticker price is a down payment. Verified against the current model: <strong>no field captures energy data</strong> (<code>models/Product.ts</code> has price, variants, SEO meta — nothing else), so two $899 fridges look identical today even if one costs double to run.</p>
+<h3 id="why-lebanon">b · Uniquely valuable in Lebanon</h3>
+<p>Lebanese households pay two electricity bills — EDL and a private generator subscription — and generator power costs dramatically more per kWh. For an energy-hungry appliance, cumulative generator-era running costs can rival or exceed the appliance's own price within a couple of years, which makes "cost to run" a <em>decisive</em> local purchase factor no regional competitor surfaces. <em>(Delivery note: quote current EDL and generator per-kWh rates from a dated source at presentation time — tariffs change; that's exactly why they're admin-configurable constants below, never hardcoded literals.)</em></p>
+<h3 id="why-cheap">c · Technically cheap — verified against the current code</h3>
+<ul>
+<li><strong>Schema:</strong> <code>ProductSchema</code> already demonstrates the optional-subdocument pattern with <code>meta: MetaSchema</code> (<code>models/Product.ts</code>). One honest precision: <code>meta</code> is <em>SEO-focused</em> (title/og tags), so the right move is a <strong>sibling</strong> optional subdoc rather than overloading it — still the same zero-migration pattern (existing documents simply lack the field, exactly like products without <code>brand</code>).</li>
+<li><strong>Variant-level nuance already exists:</strong> capacity variants are modeled (<code>IVariant.capacity</code>), and an optional per-variant <code>kWhPerYearDelta</code> would mirror the existing <code>priceDeltaCents</code> pattern exactly.</li>
+<li><strong>Filtering/sorting:</strong> <code>getProducts</code> builds a filter object and a <code>sortOption</code> from query params (<code>controllers/product.ts:42-134</code>) — additions are one filter branch and one sort branch. To keep it index-friendly (matching the existing <code>(categoryId, basePriceCents)</code> strategy), precompute <code>estYearlyCostCents</code> on save — the codebase already has both precedents: the slug pre-validate hook (<code>models/Product.ts</code>) and the precomputed <code>totalCostCents</code> on purchases (<code>models/Purchase.ts:10-11</code>).</li>
+<li><strong>Admin input:</strong> the product form already ships structured JSON in multipart FormData (<code>admin/Products.tsx</code>) — energy inputs are three more controlled fields.</li>
+</ul>
+<h3 id="why-moat">d · Defensible differentiator + native upsell path</h3>
+<p>No local appliance retailer ranks by cost of ownership. The upsell mechanism already exists: the recommendation system (<code>services/scheduler.ts</code> engine + <code>controllers/recommendation.ts</code> fallback chain + <code>productRecommendations</code> cache) can gain one "efficient alternative" rule — same category, similar price band, lower <code>estYearlyCostCents</code>. "This fridge costs $120/year to run — this one $55" is the highest-margin sentence a salesperson can say in Lebanon. And with the new <strong>purchases</strong> data, staff can even see margin <em>and</em> efficiency together when choosing what to restock.</p>
+
+<h2 id="impl">Concrete implementation path (4 small steps + 1 stretch)</h2>
+<div class="codeblock"><div class="path">server/src/models/Product.ts — step 1 (additive, zero migration)</div>
+<pre><code>export interface IEnergySpec {
+  kWhPerYear?: number;   // standardized yearly consumption (spec sheet)
+  energyClass?: string;  // 'A+++'…'D' badge label (low-precision fallback)
+  standbyWatts?: number; // for always-on devices
+  estYearlyCostCents?: number; // PRECOMPUTED on save from admin-configurable tariffs
+}
+// sibling of `meta`, optional — existing documents simply lack it
+energySpec: { type: EnergySpecSchema, required: false }</code></pre></div>
+<div class="tablewrap"><table>
+<thead><tr><th>Step</th><th>Change</th><th>Files</th><th>Owner</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><code>EnergySpecSchema</code> + optional <code>energySpec</code> (+ optional per-variant delta); pre-save hook computing <code>estYearlyCostCents</code> from admin-configurable tariff constants; recompute in the existing nightly cron when tariffs change</td><td><code>server/src/models/Product.ts</code>, <code>services/scheduler.ts</code></td><td><span class="chip mahmod">Mahmod</span></td></tr>
+<tr><td>2</td><td>Filter branch (<code>maxYearlyCost</code> → <code>energySpec.estYearlyCostCents: {$lte}</code>) + sort branch (<code>sort=tco_asc</code>); accept <code>energySpec</code> JSON in create/update (same parse pattern as <code>variants</code>)</td><td><code>server/src/controllers/product.ts</code></td><td><span class="chip malik">Malik</span></td></tr>
+<tr><td>3</td><td>Energy fields in the admin product form</td><td><code>client/src/pages/admin/Products.tsx</code></td><td><span class="chip haya">Haya</span></td></tr>
+<tr><td>4</td><td>Energy-class badge + yearly/5-year cost calculator with adjustable grid/generator hours; TCO sort option in the existing dropdown; cost filter in the existing sidebar</td><td><code>ui/ProductCard.tsx</code>, <code>pages/ProductDetail.tsx</code>, <code>pages/ProductList.tsx</code></td><td><span class="chip haya">Haya</span></td></tr>
+<tr><td>5 <em>(stretch)</em></td><td>"Efficient alternative" recommendation rule reusing the cache pattern</td><td><code>server/src/services/scheduler.ts</code></td><td><span class="chip malik">Malik</span></td></tr>
+</tbody></table></div>
+
+<h2 id="risks">Risks &amp; honest caveats (say these before you're asked)</h2>
+<ul>
+<li><strong>Data sourcing:</strong> kWh/year comes from manufacturer spec sheets entered by the inventory manager — garbage in, garbage out; the <code>energyClass</code> label is the low-precision fallback badge.</li>
+<li><strong>Tariff volatility:</strong> Lebanese tariffs change — hence admin-configurable constants and a precomputed, recomputable <code>estYearlyCostCents</code>; the UI never does tariff math from literals.</li>
+<li><strong>Coverage:</strong> the badge/sort applies only to products carrying <code>energySpec</code> — the optional-field design degrades gracefully instead of blocking on a full catalog backfill.</li>
+</ul>
+
+<h2 id="qa">Anticipated questions</h2>
+<div class="qa"><div class="q">Why not just show the energy label like EU shops do?</div>The label is a static class letter; our differentiator is the <em>localized money number</em> — EDL + generator split, adjustable to the customer's own outage hours — and the ability to sort the whole catalog by it.</div>
+<div class="qa"><div class="q">Why precompute instead of calculating per request?</div>Sorting the catalog by a computed expression can't use an index; precomputing on save (and on tariff change via the nightly cron) makes TCO sorting exactly as cheap as today's price sorting — the same reasoning the codebase already applies to recommendations and <code>totalCostCents</code> on purchases.</div>
+<div class="qa"><div class="q">How long would this take?</div>Steps 1–2 are an afternoon (one optional subdoc + two query branches on an existing pipeline); the calculator UI is the bulk of a second day; the recommendation rule is a stretch goal reusing an existing nightly job.</div>
+
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team: <span class="chip haya">Haya</span> Frontend ·
+      <span class="chip mahmod">Mahmod</span> Database · <span class="chip malik">Malik</span> Backend &amp; Architecture ·
+      Every claim cites a repository file path; the current code is the only ground truth.
+    </div>
+  </div>
+</div>
+<script>
+// Highlight the TOC entry of the section in view
+const links=[...document.querySelectorAll('.toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-10% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+%% OptiCart auth flow — login, rotation, grace, reuse detection
+sequenceDiagram
+  participant B as Browser (memory token)
+  participant A as Express /api/auth
+  participant DB as MongoDB users
+
+  B->>A: POST /login (email, password)
+  A->>DB: bcrypt compare · isActive · isEmailVerified
+  A->>DB: store SHA-256(refreshToken)
+  A-->>B: accessToken (JWT 15m) + Set-Cookie refreshToken (httpOnly, SameSite=Strict, 7d)
+
+  Note over B: access token expires → any request 401s
+  B->>A: POST /refresh (cookie) — single-flight on the client
+  A->>DB: findOneAndUpdate({refreshTokenHash: old}, {new hash, prev=old, grace 30s})
+  alt exactly one concurrent refresh wins
+    A-->>B: new accessToken + rotated cookie
+  else token matches prevRefreshTokenHash within 30s (other tab)
+    A-->>B: new accessToken only (no re-rotation)
+  else stale token outside grace (theft signal)
+    A->>DB: null ALL refresh hashes
+    A-->>B: 403 AUTH_SESSION_COMPROMISED → full re-login
+  end
