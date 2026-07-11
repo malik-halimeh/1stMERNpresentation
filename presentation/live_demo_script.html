@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Demo Script — Click by Click — OptiCart Presentation</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:960px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.94);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:6px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:14px 0 20px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:40px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+  .chip.all{background:rgba(148,163,184,.16);color:#CBD5E1;border:1px solid rgba(148,163,184,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:11px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none;font-size:13px}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 14px;border-top:1px solid var(--border)}
+
+  /* ══════════ SLIDE-SPECIFIC ══════════ */
+  /* timing toggle bar */
+  .topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0 4px;margin-bottom:8px}
+  .topbar .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+  .tglbtn{cursor:pointer;font-size:12px;font-weight:700;padding:6px 14px;border-radius:999px;
+          background:var(--surface);color:var(--muted);border:1px solid var(--border);transition:.12s}
+  .tglbtn:hover{color:#fff;border-color:var(--muted)}
+  .tglbtn.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+  .modehint{font-size:11.5px;color:var(--muted)}
+
+  /* slide card */
+  .slidecard{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+             margin:18px 0;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+  .sc-head{display:flex;align-items:center;gap:12px;padding:13px 18px;background:var(--surface2);
+           border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .sc-num{font-size:20px;font-weight:800;color:var(--orange);min-width:34px;line-height:1}
+  .sc-title{font-size:16px;font-weight:700;color:#fff;flex:1;min-width:180px}
+  .dur{font-size:11px;font-weight:800;letter-spacing:.03em;background:rgba(13,148,136,.16);color:#2DD4BF;
+       border:1px solid rgba(13,148,136,.4);padding:3px 10px;border-radius:999px;white-space:nowrap}
+  .tagbadge{font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:2px 8px;border-radius:999px;text-transform:uppercase}
+  .tagbadge.core{background:rgba(234,88,12,.18);color:#FB923C}
+  .tagbadge.standard{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .tagbadge.extended{background:rgba(139,92,246,.16);color:#A78BFA}
+  .sc-body{padding:6px 18px 16px}
+  .blk{margin:12px 0}
+  .blk .k{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+          padding:2px 9px;border-radius:5px;margin-bottom:6px}
+  .k.say{background:rgba(16,185,129,.16);color:#34D399}
+  .k.do{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .k.trans{background:rgba(139,92,246,.16);color:#A78BFA}
+  .blk.say .txt{font-size:14.5px;line-height:1.75;color:#F1F5F9}
+  .blk.say .txt em{color:#FCA5A5;font-style:normal;background:rgba(234,88,12,.10);padding:0 3px;border-radius:3px}
+  .blk.do .txt,.blk.trans .txt{font-size:13px;color:var(--text)}
+  .blk .txt{margin-top:2px}
+
+  /* loud next-slide banner */
+  .banner{margin:14px 0 2px;background:var(--orange);color:#fff;font-weight:800;font-size:13.5px;
+          letter-spacing:.02em;padding:11px 16px;border-radius:9px;text-align:center;
+          box-shadow:0 3px 0 #9A3412;line-height:1.5}
+  .banner .cue{color:#FFEDD5;font-style:italic}
+
+  /* presenter section divider (notes) */
+  .psection{margin:44px 0 10px;padding:16px 20px;border-radius:12px;border:1px solid var(--border)}
+  .psection h2{margin:0;border:0}
+  .psection h2::before{display:none}
+  .psection.haya{background:linear-gradient(90deg,rgba(13,148,136,.18),transparent);border-left:5px solid var(--teal)}
+  .psection.malik{background:linear-gradient(90deg,rgba(234,88,12,.18),transparent);border-left:5px solid var(--orange)}
+  .psection.mahmod{background:linear-gradient(90deg,rgba(139,92,246,.18),transparent);border-left:5px solid var(--violet)}
+  .psection p{margin:4px 0 0;font-size:12.5px;color:var(--muted)}
+
+  /* checklist */
+  .chk{list-style:none;margin:10px 0}
+  .chk li{position:relative;padding:6px 6px 6px 30px;border-bottom:1px solid var(--border);font-size:13.5px}
+  .chk li:last-child{border-bottom:none}
+  .chk li::before{content:"☐";position:absolute;left:6px;top:6px;color:var(--orange);font-size:15px}
+  .step{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .step:last-child{border-bottom:none}
+  .step .n{flex-shrink:0;width:26px;height:26px;border-radius:8px;background:var(--surface2);color:var(--orange);
+           font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .step .c{flex:1}
+  .step .c .u{font-size:11px;color:var(--muted)}
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){ .sidebar{display:none} .main{margin-left:0;padding:0 16px 60px} }
+
+  /* ── print ── */
+  @media print{
+    .sidebar,.topbar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary,.sc-title{color:#000 !important}
+    .slidecard,.qa,.codeblock,.note,.warn,.step,tr{page-break-inside:avoid}
+    .slidecard{border-color:#999;box-shadow:none}
+    .sc-head{background:#eee}
+    .banner{background:#eee;color:#000;box-shadow:none;border:1px dashed #000}
+    .banner .cue{color:#000}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+    .page-break{page-break-before:always}
+    body.view-core .slidecard[data-tag="standard"],
+    body.view-core .slidecard[data-tag="extended"],
+    body.view-standard .slidecard[data-tag="extended"]{display:block}
+  }
+
+  /* timing-variant visibility */
+  body.view-core .slidecard[data-tag="standard"],
+  body.view-core .slidecard[data-tag="extended"],
+  body.view-standard .slidecard[data-tag="extended"]{display:none}
+</style>
+</head>
+<body class="view-standard">
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Deck</div>
+    <p>Choreographed demo checklist</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#pre" class="">Pre-demo checklist (do this 10 minutes before)</a></li>
+    <li><a href="#env" class="">Environment &amp; accounts</a></li>
+    <li><a href="#partA" class="">Part A · Haya — the customer journey Haya</a></li>
+    <li><a href="#partB" class="">Part B · Malik — auth, security &amp; the sale Malik</a></li>
+    <li><a href="#partC" class="">Part C · Mahmod — data integrity, procurement &amp; insight Mahmod</a></li>
+    <li><a href="#screens" class="">Screenshots to prepare in advance</a></li>
+    <li><a href="#global" class="">Global fallback plan</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>Presentation kit</h4>
+    <a href="presentation_script.html">Presentation Script</a>
+    <a href="live_demo_script.html">Live Demo Script</a>
+    <a href="presenter_notes.html">Presenter Notes</a>
+    <a href="rehearsal.html">Rehearsal Guide</a>
+    <a href="../00_ANALYSIS/analysis_refresh.html">↳ Analysis Refresh</a>
+    <a href="../project_master_guide.html">↳ Master Guide</a>
+    <a href="../questions/question_bank.html">↳ Question Bank</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Live Demo Script — Click by Click</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">Every click, URL, and DevTools action in order, with a pre-demo checklist and per-step fallbacks. Verified against the refreshed feature inventory — no step routes through an unfinished flow.</p>
+
+<div class="note"><strong>Purpose.</strong> The exact, rehearsed click path for the live demo, in one continuous shopper story. Each step names the presenter, the action, the expected result, and a fallback. Every path here is a feature verified <span class="st ok">COMPLETE</span> in the refreshed inventory — no step routes through anything unfinished. <strong>URLs assume defaults; confirm the ports against your <code>.env</code> before you start.</strong></div>
+
+<h2 id="pre">Pre-demo checklist (do this 10 minutes before)</h2>
+<ul class="chk">
+<li><strong>Seed the database</strong> — run the seed script so the 3 accounts, products, orders, coupons exist. Confirm at least one product is <em>delivered</em> for this customer (needed for the verified-review step).</li>
+<li><strong>Both servers running</strong> — API up, client dev server up; open the storefront once to confirm it loads.</li>
+<li><strong>Logged OUT</strong> — clear the session so the demo starts as a guest. Empty the guest cart (or pre-seed one item if you want the merge to be visible).</li>
+<li><strong>DevTools ready</strong> — Chrome DevTools open on the <em>Network</em> tab, "Preserve log" ON, filtered to <code>Fetch/XHR</code>. Zoom the browser to ~110% so the audience can read it.</li>
+<li><strong>Coupons confirmed</strong> — <code>SAVE10</code> (10% off ≥ $50) and <code>FLAT50</code> ($50 off ≥ $500) are active.</li>
+<li><strong>Two browser profiles or windows</strong> — one for the customer, one for staff — so you don't burn time logging in and out.</li>
+<li><strong>Screen share</strong> — share the browser window (not the whole desktop); notifications silenced.</li>
+<li><strong>Backup screenshots folder open</strong> in case a live step misbehaves (see §Screenshots).</li>
+<li><strong>Terminal ready</strong> for the optional <code>test_fixes.ts</code> run (security slide).</li>
+</ul>
+
+<h2 id="env">Environment &amp; accounts</h2>
+<div class="kv">
+<dt>Storefront (client)</dt><dd><code>http://localhost:5173</code> <em>(Vite default — confirm)</em></dd>
+<dt>Admin area</dt><dd><code>http://localhost:5173/admin</code></dd>
+<dt>API base</dt><dd><code>http://localhost:5000/api</code> <em>(confirm port in <code>server/.env</code>)</em></dd>
+<dt>Customer</dt><dd><code>customer@opticart.dev</code> / <code>Customer123!</code></dd>
+<dt>Inventory manager</dt><dd><code>manager@opticart.dev</code> / <code>Manager123!</code></dd>
+<dt>Super admin</dt><dd><code>admin@opticart.dev</code> / <code>Admin123!</code></dd>
+<dt>Coupons</dt><dd><code>SAVE10</code> (10% ≥ $50) · <code>FLAT50</code> ($50 ≥ $500)</dd>
+</div>
+<div class="warn"><strong>Everything runs offline:</strong> mock Stripe, mock Cloudinary, console mailer, local MongoDB. No internet dependency during the demo.</div>
+
+<h2 id="partA">Part A · Haya — the customer journey <span class="chip haya">Haya</span></h2>
+<div class="slidecard"><div class="sc-body">
+<div class="step"><div class="n">1</div><div class="c"><strong>Land on the storefront as a guest.</strong><div class="u">URL <code>/</code> · logged out. Point out the header category nav is live from <code>GET /categories</code>, navigates by slug.<br><em>Fallback:</em> if nav is empty, categories didn't seed — refresh; else screenshot A1.</div></div></div>
+<div class="step"><div class="n">2</div><div class="c"><strong>Search "refrigerator".</strong><div class="u">Type in the header search, submit. URL becomes <code>/products?search=refrigerator</code>. Note it's shareable / back-button-safe.<br><em>Fallback:</em> if no results, search "oven" or any seeded term; screenshot A2.</div></div></div>
+<div class="step"><div class="n">3</div><div class="c"><strong>Open the filter sidebar; narrow by price + rating.</strong><div class="u">Watch the list and the URL update together. Mention skeleton loaders on refetch.<br><em>Fallback:</em> if a filter returns empty, widen it; the point is the URL-driven filtering, not a specific result.</div></div></div>
+<div class="step"><div class="n">4</div><div class="c"><strong>Open a product detail page.</strong><div class="u">Point to the variant picker, image gallery, and the specs/reviews tabs.<br><em>Fallback:</em> pick any product with multiple variants; screenshot A4.</div></div></div>
+<div class="step"><div class="n">5</div><div class="c"><strong>Switch the variant.</strong><div class="u">Price, gallery, and stock indicator update; add-to-cart targets that variant's SKU.<br><em>Fallback:</em> if single-variant product, choose another; screenshot A5.</div></div></div>
+<div class="step"><div class="n">6</div><div class="c"><strong>Add to wishlist (heart).</strong><div class="u">Heart fills; guest wishlist persists in localStorage.</div></div></div>
+<div class="step"><div class="n">7</div><div class="c"><strong>Add to cart — show the toast.</strong><div class="u">Toast confirms; cart badge increments. Guest cart is localStorage.<br><em>Fallback:</em> if toast is missed, add a second item so it re-appears.</div></div></div>
+<div class="step"><div class="n">8</div><div class="c"><strong>Click Checkout → stop at the sign-in prompt.</strong><div class="u">Do NOT log in yet — this is the handoff. Say: "as a guest my cart lives locally; watch what happens when I sign in."</div></div></div>
+</div></div>
+<div class="note"><strong>Handoff:</strong> "That's the handoff — Malik, what happens when I log in?" → mouse to Malik.</div>
+
+<h2 id="partB">Part B · Malik — auth, security &amp; the sale <span class="chip malik">Malik</span></h2>
+<div class="slidecard"><div class="sc-body">
+<div class="step"><div class="n">9</div><div class="c"><strong>Sign in as the customer.</strong><div class="u"><code>customer@opticart.dev / Customer123!</code>. On success you're redirected to the storefront (not stranded on login).<br><em>Fallback:</em> screenshot B9 of the merged cart.</div></div></div>
+<div class="step"><div class="n">10</div><div class="c"><strong>Show the guest cart merged.</strong><div class="u">Open the cart — the guest item is now on the account. Say "nothing lost, stock re-validated."</div></div></div>
+<div class="step"><div class="n">11</div><div class="c"><strong>DevTools → Network: the Bearer header.</strong><div class="u">Click any API call; show <code>Authorization: Bearer …</code>. Say the token lives in memory only — never localStorage.<br><em>Fallback:</em> if headers are hard to read, screenshot B11.</div></div></div>
+<div class="step"><div class="n">12</div><div class="c"><strong>(If reproducible) 401 → silent refresh → retry.</strong><div class="u">Let the access token expire or trigger a refresh; show the <code>/auth/refresh</code> call and the retried original. User sees nothing.<br><em>Fallback:</em> DON'T stall — describe it, point to <code>services/api.ts</code>, use screenshot B12. This is the one flaky step; have the screenshot ready.</div></div></div>
+<div class="step"><div class="n">13</div><div class="c"><strong>403 RBAC rejection.</strong><div class="u">As the customer, hit an admin-only API (e.g. navigate to <code>/admin</code> or call an admin endpoint) → server returns <strong>403</strong>. Say "enforced on the server, not hidden in the UI."<br><em>Fallback:</em> screenshot B13 of the 403 envelope.</div></div></div>
+<div class="step"><div class="n">14</div><div class="c"><strong>Apply coupon <code>SAVE10</code> at checkout.</strong><div class="u">Discount applies. Say the server re-prices and re-validates the coupon from scratch — the browser's numbers aren't trusted.</div></div></div>
+<div class="step"><div class="n">15</div><div class="c"><strong>Complete the (mock) payment.</strong><div class="u">Order is created from server prices with line-item snapshots. Stock decrements only on payment success, atomically.<br><em>Fallback:</em> if mock payment hangs, screenshot B15 of a completed order.</div></div></div>
+<div class="step"><div class="n">16</div><div class="c"><strong>Switch to staff — Orders queue.</strong><div class="u"><code>manager@opticart.dev / Manager123!</code> in the second window → <code>/admin/orders</code>. Find the new order.</div></div></div>
+<div class="step"><div class="n">17</div><div class="c"><strong>Advance the state machine: confirm → ship → deliver.</strong><div class="u">Each transition is validated (no skipping). Point out it fires the customer's bell + email (console mailer).<br><em>Fallback:</em> screenshot B17 of the status stepper.</div></div></div>
+<div class="step"><div class="n">18</div><div class="c"><strong>Show the customer notification.</strong><div class="u">Back in the customer window, the notification bell shows the update. Say "payment is captured by the machine; fulfilment stays a human decision."</div></div></div>
+</div></div>
+<div class="note"><strong>Handoff:</strong> "Mahmod, this is where your integrity rules earn their keep." → mouse to Mahmod.</div>
+
+<h2 id="partC">Part C · Mahmod — data integrity, procurement &amp; insight <span class="chip mahmod">Mahmod</span></h2>
+<div class="slidecard"><div class="sc-body">
+<div class="step"><div class="n">19</div><div class="c"><strong>Leave a verified review on the delivered product.</strong><div class="u">Only possible now that it's delivered. Submit a rating → the product's average updates. Say: unique index (one per customer per product) + transaction recompute.<br><em>Fallback:</em> if the review entry point isn't visible, ensure the order is DELIVERED for THIS customer; screenshot C19.</div></div></div>
+<div class="step"><div class="n">20</div><div class="c"><strong>Show snapshots via the ERD/diagram (not a live shell).</strong><div class="u">Point to the order's frozen item name/price on the ERD. Say: rename the product in admin and the past order is unchanged — that's why we snapshot.<br><em>Fallback:</em> this is diagram-driven by design — no DB shell risk.</div></div></div>
+<div class="step"><div class="n">21</div><div class="c"><strong>Describe the append-only audit guarantee.</strong><div class="u">Reference the audit design: editing an entry is rejected by the model hook. <strong>Do not run a live shell edit unless you rehearsed it</strong> — describe it and show the audit log UI instead.</div></div></div>
+<div class="step"><div class="n">22</div><div class="c"><strong>Procurement — record a stock purchase.</strong><div class="u"><code>/admin/purchases</code> (as manager/admin) → record a purchase for a product. Stock rises; weighted-average cost blends; both in one atomic op.<br><em>Fallback:</em> screenshot C22 of before/after stock + cost.</div></div></div>
+<div class="step"><div class="n">23</div><div class="c"><strong>Show the dashboard month-spend tile move.</strong><div class="u"><code>/admin/dashboard</code> — the purchase-spend KPI reflects the new purchase.</div></div></div>
+<div class="step"><div class="n">24</div><div class="c"><strong>Analytics — revenue vs purchase-spend.</strong><div class="u"><code>admin@opticart.dev / Admin123!</code> → <code>/admin/analytics</code>. Point to revenue and purchase-spend charts together (the margin story). Aggregation pipelines, not client math.<br><em>Fallback:</em> screenshot C24.</div></div></div>
+<div class="step"><div class="n">25</div><div class="c"><strong>Audit log viewer.</strong><div class="u"><code>/admin/audit-logs</code> — show entries and filters (actor, action type). Point out role changes, refunds, stock purchases are all here, immutable.</div></div></div>
+<div class="step"><div class="n">26</div><div class="c"><strong>(Optional, security slide) Run the regression suite.</strong><div class="u">In the terminal, run <code>test_fixes.ts</code> → 20/20. Say "we found our own bugs and proved the fixes."<br><em>Fallback:</em> screenshot C26 of a green 20/20 run.</div></div></div>
+<div class="step"><div class="n">27</div><div class="c"><strong>Close the demo, return to slides.</strong><div class="u">Switch screen-share back to the deck for the learnings slide.</div></div></div>
+</div></div>
+
+<h2 id="screens">Screenshots to prepare in advance</h2>
+<div class="note">Capture these while everything works, so any flaky live step becomes a one-second recovery instead of dead air. Name them exactly so you can find them under pressure.</div>
+<div class="tablewrap"><table>
+<thead><tr><th>ID</th><th>What it shows</th><th>Backs up step</th></tr></thead>
+<tbody>
+<tr><td>A1</td><td>Storefront home with live category nav open</td><td>1</td></tr>
+<tr><td>A2</td><td>Search results for a seeded term</td><td>2</td></tr>
+<tr><td>A4/A5</td><td>Product detail + variant switched (price/stock changed)</td><td>4–5</td></tr>
+<tr><td>B9</td><td>Cart after login showing the merged guest item</td><td>9–10</td></tr>
+<tr><td>B11</td><td>Network tab with the <code>Authorization: Bearer</code> header</td><td>11</td></tr>
+<tr><td>B12</td><td>The 401 → <code>/auth/refresh</code> → retried request chain</td><td>12 (flaky — essential)</td></tr>
+<tr><td>B13</td><td>403 error envelope from an admin call as a customer</td><td>13</td></tr>
+<tr><td>B15</td><td>Completed order (server prices, snapshots)</td><td>15</td></tr>
+<tr><td>B17</td><td>Order status stepper mid-lifecycle</td><td>17</td></tr>
+<tr><td>C19</td><td>Verified review submitted + updated average</td><td>19</td></tr>
+<tr><td>C22</td><td>Purchase recorded — stock + weighted-avg cost before/after</td><td>22</td></tr>
+<tr><td>C24</td><td>Analytics: revenue vs purchase-spend charts</td><td>24</td></tr>
+<tr><td>C26</td><td>Green <code>test_fixes.ts</code> 20/20 run</td><td>26</td></tr>
+</tbody></table></div>
+
+<h2 id="global">Global fallback plan</h2>
+<ul>
+<li><strong>A server dies mid-demo.</strong> Don't debug live — switch to screenshots and narrate; restart the server off-screen while the next presenter talks.</li>
+<li><strong>Mock payment hangs.</strong> Use screenshot B15 and move to the fulfilment queue with an existing paid order from the seed.</li>
+<li><strong>The 401→refresh won't reproduce.</strong> Never wait for it — it's timing-dependent. Describe it, point to <code>services/api.ts</code>, show B12. (Pre-scripted in the presentation script as an "if reproducible" step.)</li>
+<li><strong>Wrong data state</strong> (e.g. no delivered order for the review). Re-seed before the session; if it happens live, pivot to a product that already has reviews and describe the verified-purchase rule from the ERD.</li>
+<li><strong>Total demo failure.</strong> Everything demoed maps to a slide + screenshot; you can deliver the entire story from the deck alone without losing the narrative.</li>
+</ul>
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team:
+      <span class="chip haya">Haya</span> Frontend · <span class="chip mahmod">Mahmod</span> Database ·
+      <span class="chip malik">Malik</span> Backend &amp; Architecture · Spoken content describes POST-FIX behavior;
+      every technical claim is consistent with the refreshed analysis and current code.
+    </div>
+  </div>
+</div>
+<script>
+const links=[...document.querySelectorAll('.toc a[href^="#"]')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-8% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+function setMode(m){document.body.className='view-'+m;
+  document.querySelectorAll('.tglbtn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));}
+</script>
+
+</body>
+</html>

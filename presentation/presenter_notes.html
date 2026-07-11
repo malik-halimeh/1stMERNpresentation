@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Presenter Notes — Per Person — OptiCart Presentation</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:960px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.94);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:6px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:14px 0 20px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:40px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+  .chip.all{background:rgba(148,163,184,.16);color:#CBD5E1;border:1px solid rgba(148,163,184,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:11px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none;font-size:13px}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 14px;border-top:1px solid var(--border)}
+
+  /* ══════════ SLIDE-SPECIFIC ══════════ */
+  /* timing toggle bar */
+  .topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0 4px;margin-bottom:8px}
+  .topbar .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+  .tglbtn{cursor:pointer;font-size:12px;font-weight:700;padding:6px 14px;border-radius:999px;
+          background:var(--surface);color:var(--muted);border:1px solid var(--border);transition:.12s}
+  .tglbtn:hover{color:#fff;border-color:var(--muted)}
+  .tglbtn.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+  .modehint{font-size:11.5px;color:var(--muted)}
+
+  /* slide card */
+  .slidecard{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+             margin:18px 0;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+  .sc-head{display:flex;align-items:center;gap:12px;padding:13px 18px;background:var(--surface2);
+           border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .sc-num{font-size:20px;font-weight:800;color:var(--orange);min-width:34px;line-height:1}
+  .sc-title{font-size:16px;font-weight:700;color:#fff;flex:1;min-width:180px}
+  .dur{font-size:11px;font-weight:800;letter-spacing:.03em;background:rgba(13,148,136,.16);color:#2DD4BF;
+       border:1px solid rgba(13,148,136,.4);padding:3px 10px;border-radius:999px;white-space:nowrap}
+  .tagbadge{font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:2px 8px;border-radius:999px;text-transform:uppercase}
+  .tagbadge.core{background:rgba(234,88,12,.18);color:#FB923C}
+  .tagbadge.standard{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .tagbadge.extended{background:rgba(139,92,246,.16);color:#A78BFA}
+  .sc-body{padding:6px 18px 16px}
+  .blk{margin:12px 0}
+  .blk .k{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+          padding:2px 9px;border-radius:5px;margin-bottom:6px}
+  .k.say{background:rgba(16,185,129,.16);color:#34D399}
+  .k.do{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .k.trans{background:rgba(139,92,246,.16);color:#A78BFA}
+  .blk.say .txt{font-size:14.5px;line-height:1.75;color:#F1F5F9}
+  .blk.say .txt em{color:#FCA5A5;font-style:normal;background:rgba(234,88,12,.10);padding:0 3px;border-radius:3px}
+  .blk.do .txt,.blk.trans .txt{font-size:13px;color:var(--text)}
+  .blk .txt{margin-top:2px}
+
+  /* loud next-slide banner */
+  .banner{margin:14px 0 2px;background:var(--orange);color:#fff;font-weight:800;font-size:13.5px;
+          letter-spacing:.02em;padding:11px 16px;border-radius:9px;text-align:center;
+          box-shadow:0 3px 0 #9A3412;line-height:1.5}
+  .banner .cue{color:#FFEDD5;font-style:italic}
+
+  /* presenter section divider (notes) */
+  .psection{margin:44px 0 10px;padding:16px 20px;border-radius:12px;border:1px solid var(--border)}
+  .psection h2{margin:0;border:0}
+  .psection h2::before{display:none}
+  .psection.haya{background:linear-gradient(90deg,rgba(13,148,136,.18),transparent);border-left:5px solid var(--teal)}
+  .psection.malik{background:linear-gradient(90deg,rgba(234,88,12,.18),transparent);border-left:5px solid var(--orange)}
+  .psection.mahmod{background:linear-gradient(90deg,rgba(139,92,246,.18),transparent);border-left:5px solid var(--violet)}
+  .psection p{margin:4px 0 0;font-size:12.5px;color:var(--muted)}
+
+  /* checklist */
+  .chk{list-style:none;margin:10px 0}
+  .chk li{position:relative;padding:6px 6px 6px 30px;border-bottom:1px solid var(--border);font-size:13.5px}
+  .chk li:last-child{border-bottom:none}
+  .chk li::before{content:"☐";position:absolute;left:6px;top:6px;color:var(--orange);font-size:15px}
+  .step{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .step:last-child{border-bottom:none}
+  .step .n{flex-shrink:0;width:26px;height:26px;border-radius:8px;background:var(--surface2);color:var(--orange);
+           font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .step .c{flex:1}
+  .step .c .u{font-size:11px;color:var(--muted)}
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){ .sidebar{display:none} .main{margin-left:0;padding:0 16px 60px} }
+
+  /* ── print ── */
+  @media print{
+    .sidebar,.topbar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary,.sc-title{color:#000 !important}
+    .slidecard,.qa,.codeblock,.note,.warn,.step,tr{page-break-inside:avoid}
+    .slidecard{border-color:#999;box-shadow:none}
+    .sc-head{background:#eee}
+    .banner{background:#eee;color:#000;box-shadow:none;border:1px dashed #000}
+    .banner .cue{color:#000}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+    .page-break{page-break-before:always}
+    body.view-core .slidecard[data-tag="standard"],
+    body.view-core .slidecard[data-tag="extended"],
+    body.view-standard .slidecard[data-tag="extended"]{display:block}
+  }
+
+  /* timing-variant visibility */
+  body.view-core .slidecard[data-tag="standard"],
+  body.view-core .slidecard[data-tag="extended"],
+  body.view-standard .slidecard[data-tag="extended"]{display:none}
+</style>
+</head>
+<body class="view-standard">
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Deck</div>
+    <p>One section per presenter</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#malik" class="">Malik — Backend &amp; Architecture Malik</a></li>
+    <li><a href="#malik-slides" class="h3">Your slides</a></li>
+    <li><a href="#malik-demo" class="h3">Your demo steps</a></li>
+    <li><a href="#malik-learned" class="h3">Your learned &amp; challenging</a></li>
+    <li><a href="#malik-q" class="h3">Your top-10 questions</a></li>
+    <li><a href="#haya" class="">Haya — Frontend Haya</a></li>
+    <li><a href="#haya-slides" class="h3">Your slides</a></li>
+    <li><a href="#haya-demo" class="h3">Your demo steps</a></li>
+    <li><a href="#haya-learned" class="h3">Your learned &amp; challenging</a></li>
+    <li><a href="#haya-q" class="h3">Your top-10 questions</a></li>
+    <li><a href="#mahmod" class="">Mahmod — Database Mahmod</a></li>
+    <li><a href="#mahmod-slides" class="h3">Your slides</a></li>
+    <li><a href="#mahmod-demo" class="h3">Your demo steps</a></li>
+    <li><a href="#mahmod-learned" class="h3">Your learned &amp; challenging</a></li>
+    <li><a href="#mahmod-q" class="h3">Your top-10 questions</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>Presentation kit</h4>
+    <a href="presentation_script.html">Presentation Script</a>
+    <a href="live_demo_script.html">Live Demo Script</a>
+    <a href="presenter_notes.html">Presenter Notes</a>
+    <a href="rehearsal.html">Rehearsal Guide</a>
+    <a href="../00_ANALYSIS/analysis_refresh.html">↳ Analysis Refresh</a>
+    <a href="../project_master_guide.html">↳ Master Guide</a>
+    <a href="../questions/question_bank.html">↳ Question Bank</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Presenter Notes — Per Person</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">Everything each presenter owns — their slides, their demo steps, their learned/challenging statements, and their ten most-likely questions. Prints cleanly one person at a time.</p>
+
+<div class="note"><strong>How to use.</strong> One section per presenter — your slides, your demo steps, your learned/challenging lines, and your ten most-likely questions. <strong>To print just your part:</strong> each person starts on a fresh page, so you can print the whole file and hand each person their pages, or use your browser's page range. Full spoken text lives in <code>presentation_script.html</code>; click paths in <code>live_demo_script.html</code>.</div>
+
+<div class="psection malik"><h2 id="malik">Malik — Backend &amp; Architecture <span class="chip malik">Malik</span></h2>
+<p>You carry the architecture spine, the auth/security story, payments, and the honesty segment. You're also the anchor when a deep technical question lands on anyone.</p></div>
+
+<h3 id="malik-slides">Your slides</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>Slide</th><th>Your one job on it</th></tr></thead>
+<tbody>
+<tr><td>2</td><td>The Idea</td><td>Frame the mission: get money + stock right, both sides of one system.</td></tr>
+<tr><td>3</td><td>Agenda</td><td>Set expectations; invite interruptions.</td></tr>
+<tr><td>7</td><td>Architecture &amp; Lifecycle</td><td>Three layers; the raw-webhook-before-JSON ordering point.</td></tr>
+<tr><td>8</td><td>Sprint &amp; Pre-Dev Decisions</td><td>11 epics/40 sub-tasks; the big bets made up front.</td></tr>
+<tr><td>9</td><td>Demo Handoff</td><td>Switch to browser; hand to Haya.</td></tr>
+<tr><td>11</td><td>Auth &amp; Security Demo</td><td>Bearer in memory, silent refresh, 403 RBAC.</td></tr>
+<tr><td>12</td><td>Checkout &amp; Lifecycle</td><td>Server re-prices; atomic stock; state machine.</td></tr>
+<tr><td>15</td><td>Analytics &amp; Audit (with Mahmod)</td><td>Revenue vs purchase-spend; append-only audit.</td></tr>
+<tr><td>18</td><td>Evaluation Mapping</td><td>Every criterion → a concrete file.</td></tr>
+<tr><td>19</td><td>Security Found→Fixed→Proven</td><td>Your signature slide; offer the 20/20 run.</td></tr>
+<tr><td>20</td><td>Honesty — Open Items</td><td>Raise the scaling/hygiene gaps before they're found.</td></tr>
+</tbody></table></div>
+
+<h3 id="malik-demo">Your demo steps</h3>
+<p>Part B, steps 9–18 (auth → network → coupon → mock pay → fulfilment state machine), plus optional step 26 (run <code>test_fixes.ts</code> → 20/20). The one flaky step is #12 (401→refresh) — never stall on it; describe it and use screenshot B12.</p>
+
+<h3 id="malik-learned">Your learned &amp; challenging</h3>
+<div class="note"><strong>Learned (confident now):</strong> <em>Compensating transactions.</em> "MongoDB gives single-document atomicity, but the purchase flow touches two documents. I learned to make the second write reversible and undo the first on failure — that pattern made our costing feature safe without heavyweight machinery."</div>
+<div class="warn"><strong>Still challenging (own it lightly):</strong> <em>Designing for horizontal scale.</em> "I can reason about Redis-backed limiting and a cron leader-lock, but I haven't run this across multiple instances for real — that's my next step."</div>
+
+<h3 id="malik-q">Your top-10 questions</h3>
+<div class="qa"><div class="q">1 · Why two tokens?</div>Short access token limits theft blast-radius; long rotating refresh keeps users in and can be revoked. One token can't be both safe and convenient.</div>
+<div class="qa"><div class="q">2 · Why is the access token in memory?</div>localStorage is script-readable (XSS). Memory dies on reload; we refresh from the http-only cookie.</div>
+<div class="qa"><div class="q">3 · What is reuse detection?</div>An old refresh token replayed outside the 30s grace = theft signal → revoke all sessions for that user.</div>
+<div class="qa"><div class="q">4 · Why raw body before express.json for the webhook?</div>Stripe signs raw bytes; parse first and the signature can't be verified. It's fail-closed — invalid = 400.</div>
+<div class="qa"><div class="q">5 · How do you prevent overselling?</div>Conditional <code>$inc</code> guarded by <code>stock ≥ qty</code>; the DB arbitrates the race, loser clamps to 0.</div>
+<div class="qa"><div class="q">6 · Why re-validate the coupon at checkout?</div>The preview is client-controlled; anyone can POST a code straight to checkout, so the server re-checks caps/expiry/min.</div>
+<div class="qa"><div class="q">7 · How do refunds work?</div><code>stripe.refunds.create</code> before persisting, refund subdoc + <code>refund_decision</code> audit, 502 on failure.</div>
+<div class="qa"><div class="q">8 · How does role change take effect?</div>Up to 15 min — the role rides in the access token. Accepted cost of stateless authz.</div>
+<div class="qa"><div class="q">9 · What breaks at multi-instance?</div>In-memory rate limit splits and cron double-runs; fix = Redis store + leader-lock. Orders/payments already DB-atomic.</div>
+<div class="qa"><div class="q">10 · How do you know fixes didn't break things?</div><code>test_fixes.ts</code> 20/20 + clean builds + HTTP smoke test through the real middleware.</div>
+
+<div class="psection haya page-break"><h2 id="haya">Haya — Frontend <span class="chip haya">Haya</span></h2>
+<p>You open the demo and carry UI/UX, responsiveness, and the client-side auth experience. You make the product feel alive.</p></div>
+
+<h3 id="haya-slides">Your slides</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>Slide</th><th>Your one job on it</th></tr></thead>
+<tbody>
+<tr><td>5</td><td>Design Direction</td><td>Token system → one visual language; skeletons + feedback rule.</td></tr>
+<tr><td>10</td><td>Frontend Demo</td><td>Guest browse → search → filter → variant → wishlist → cart → checkout start.</td></tr>
+<tr><td>14</td><td>Procurement (with Mahmod)</td><td>You drive the admin UI while Mahmod narrates the costing math.</td></tr>
+</tbody></table></div>
+<p>You also drive the mouse on slide 12's fulfilment queue while Malik narrates the state machine.</p>
+
+<h3 id="haya-demo">Your demo steps</h3>
+<p>Part A, steps 1–8 (home → live nav → search → filter → product detail → variant switch → wishlist → add to cart → checkout start). Stop at the sign-in prompt — that's the handoff to Malik. Keep it moving; this is the fun part.</p>
+
+<h3 id="haya-learned">Your learned &amp; challenging</h3>
+<div class="note"><strong>Learned (confident now):</strong> <em>Single-flight request coordination.</em> "I used to let each 401 trigger its own refresh. Serialising them behind one shared promise — N failures, one refresh, N replays — changed how I think about async UI: the fix was one point of coordination, not more state."</div>
+<div class="warn"><strong>Still challenging (own it lightly):</strong> <em>Automated frontend testing.</em> "We have a backend regression suite; I lean on manual testing for the UI and want real component/interaction tests next."</div>
+
+<h3 id="haya-q">Your top-10 questions</h3>
+<div class="qa"><div class="q">1 · Why Context instead of Redux?</div>Three bounded slices (auth, shop, toast) fit Context cleanly without Redux boilerplate.</div>
+<div class="qa"><div class="q">2 · Where's the access token stored?</div>In memory in AuthContext — never localStorage — refreshed silently from the http-only cookie on reload.</div>
+<div class="qa"><div class="q">3 · What is silent refresh?</div>On a 401, the Axios interceptor refreshes and replays the request; the user sees nothing.</div>
+<div class="qa"><div class="q">4 · Ten 401s at once — ten refreshes?</div>No — single-flight: one shared promise, one refresh, the rest replay.</div>
+<div class="qa"><div class="q">5 · How do guest carts survive login?</div>localStorage cart merges into the server cart on login; stock re-validated.</div>
+<div class="qa"><div class="q">6 · Are client route guards secure?</div>No — UX only. The server authorises every request, so bypassing the guard just yields a 403.</div>
+<div class="qa"><div class="q">7 · Why is search in the URL?</div>Shareable, bookmarkable, back-button-correct; the list reads the query param.</div>
+<div class="qa"><div class="q">8 · How is the design consistent?</div>Tailwind tokens defined once; components consume tokens, so a theme change is one edit.</div>
+<div class="qa"><div class="q">9 · Is it responsive?</div>Mobile-first; header→drawer, admin sidebar collapses, grids reflow.</div>
+<div class="qa"><div class="q">10 · Why is the bundle 546 kB / what next?</div>One chunk today; I'd route-split the admin bundle from the storefront with lazy imports.</div>
+
+<div class="psection mahmod page-break"><h2 id="mahmod">Mahmod — Database <span class="chip mahmod">Mahmod</span></h2>
+<p>You own the data model and the integrity story — the part that makes evaluators trust the whole thing. You present the ERD and the "why it's shaped like that" answers.</p></div>
+
+<h3 id="mahmod-slides">Your slides</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>Slide</th><th>Your one job on it</th></tr></thead>
+<tbody>
+<tr><td>4</td><td>Requirements &amp; Roles</td><td>FR/NFR; roles are supersets, server-enforced.</td></tr>
+<tr><td>6</td><td>Database Design (ERD)</td><td>Embed vs reference; snapshots; cents; indexes as rules.</td></tr>
+<tr><td>13</td><td>Data Integrity Demo</td><td>Verified review (unique index + transaction); snapshots; append-only audit.</td></tr>
+<tr><td>14</td><td>Procurement (with Haya)</td><td>Narrate weighted-average cost + atomic update + compensating revert.</td></tr>
+<tr><td>15</td><td>Analytics &amp; Audit (with Malik)</td><td>Back up the audit-immutability and index points.</td></tr>
+</tbody></table></div>
+
+<h3 id="mahmod-demo">Your demo steps</h3>
+<p>Part C, steps 19–25 (verified review → snapshots via ERD → append-only audit → procurement purchase → dashboard spend → analytics → audit viewer). Keep the audit-edit rejection <em>diagram-driven</em> — don't risk a live shell unless rehearsed.</p>
+
+<h3 id="mahmod-learned">Your learned &amp; challenging</h3>
+<div class="note"><strong>Learned (confident now):</strong> <em>Partial indexes.</em> "I thought a unique constraint was all-or-nothing. A unique index on a filtered subset — unique only where status is active — solved a real bug: one active low-stock alert per variant, unlimited resolved history, enforced by the database. I now see indexes as business rules, not just speed."</div>
+<div class="warn"><strong>Still challenging (own it lightly):</strong> <em>A formal data-migration workflow.</em> "Index sync we handle at boot; safely evolving live data through schema changes is the discipline I want to master next."</div>
+
+<h3 id="mahmod-q">Your top-10 questions</h3>
+<div class="qa"><div class="q">1 · When embed vs reference?</div>Embed what's owned and read together (variants, addresses); reference what's shared and edited independently (orders→products).</div>
+<div class="qa"><div class="q">2 · Why snapshot order name/price?</div>So renaming/repricing a product never rewrites past orders — history must be immutable.</div>
+<div class="qa"><div class="q">3 · What's denormalized and why?</div><code>ratingAvg</code>/<code>reviewCount</code> on products, so listings read O(1) instead of aggregating reviews.</div>
+<div class="qa"><div class="q">4 · How stay correct?</div>A transaction recomputes ratings on every review change — write pays, read stays consistent.</div>
+<div class="qa"><div class="q">5 · Explain the partial unique index.</div>Unique on (productId, variantSku) only where status is active — one active alert per variant, unlimited history.</div>
+<div class="qa"><div class="q">6 · What's a TTL index for?</div>Product view events auto-delete after 180 days — self-pruning, no cleanup job.</div>
+<div class="qa"><div class="q">7 · How does search work at the DB?</div>A text index over name/description ranks matches instead of scanning.</div>
+<div class="qa"><div class="q">8 · Why money in cents?</div>Integers are exact; floats drift. Every price/total/cost is integer cents.</div>
+<div class="qa"><div class="q">9 · Explain weighted-average costing.</div>New cost = (oldStock·oldCost + qty·newCost)/(oldStock+qty), computed atomically in the purchase update.</div>
+<div class="qa"><div class="q">10 · Where would the schema strain at scale?</div>Order and ProductEvent growth; shard Order by customer/time, roll events into daily aggregates. Embedding reduces cross-shard joins.</div>
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team:
+      <span class="chip haya">Haya</span> Frontend · <span class="chip mahmod">Mahmod</span> Database ·
+      <span class="chip malik">Malik</span> Backend &amp; Architecture · Spoken content describes POST-FIX behavior;
+      every technical claim is consistent with the refreshed analysis and current code.
+    </div>
+  </div>
+</div>
+<script>
+const links=[...document.querySelectorAll('.toc a[href^="#"]')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-8% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+function setMode(m){document.body.className='view-'+m;
+  document.querySelectorAll('.tglbtn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));}
+</script>
+
+</body>
+</html>

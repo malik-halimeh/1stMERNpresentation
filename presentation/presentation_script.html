@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Presentation Script — Master Scenario — OptiCart Presentation</title>
+<style>
+  :root{
+    --orange:#EA580C; --teal:#0D9488; --violet:#8B5CF6;
+    --bg:#0F172A; --surface:#1E293B; --surface2:#273449;
+    --text:#E2E8F0; --muted:#94A3B8; --border:#334155;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);line-height:1.7;
+       font-family:system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  code,pre,.mono{font-family:ui-monospace,Consolas,"Cascadia Code",monospace}
+
+  /* ── layout ── */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0B1222;
+           border-right:1px solid var(--border);overflow-y:auto;padding:18px 0 30px;z-index:30;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .main{margin-left:260px;display:flex;justify-content:center;padding:0 32px 90px}
+  .content{width:100%;max-width:960px}
+
+  /* ── sidebar ── */
+  .side-brand{padding:4px 20px 14px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .side-brand .logo{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.02em}
+  .side-brand .logo span{color:var(--orange)}
+  .side-brand p{font-size:11px;color:var(--muted);margin-top:2px}
+  .toc{list-style:none}
+  .toc a{display:block;padding:6px 20px;color:var(--muted);text-decoration:none;font-size:12.5px;
+         border-left:3px solid transparent;line-height:1.45}
+  .toc a:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .toc a.h3{padding-left:34px;font-size:11.5px}
+  .toc a.active{color:var(--orange);border-left-color:var(--orange)}
+  .side-files{padding:14px 20px 0;margin-top:14px;border-top:1px solid var(--border)}
+  .side-files h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .side-files a{display:block;font-size:11.5px;color:var(--muted);text-decoration:none;padding:2.5px 0}
+  .side-files a:hover{color:var(--teal)}
+  .side-files a.current{color:var(--orange);font-weight:600}
+
+  /* ── sticky page header ── */
+  .pagehead{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.94);backdrop-filter:blur(6px);
+            border-bottom:1px solid var(--border);padding:14px 0;margin-bottom:6px;
+            display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .pagehead h1{font-size:21px;letter-spacing:-.02em;color:#fff;line-height:1.3}
+  .badge-oc{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+            border:1px solid var(--border);border-radius:999px;padding:5px 14px;font-size:12px;
+            font-weight:700;color:var(--text);white-space:nowrap}
+  .badge-oc b{color:var(--orange)}
+  .subtitle{font-size:12.5px;color:var(--muted);margin:14px 0 20px}
+
+  /* ── typography ── */
+  h2{font-size:19px;color:#fff;margin:40px 0 12px;padding-top:8px;letter-spacing:-.01em}
+  h2::before{content:"";display:inline-block;width:9px;height:9px;background:var(--orange);
+             border-radius:2px;transform:rotate(45deg);margin-right:10px}
+  h3{font-size:15.5px;color:var(--text);margin:24px 0 8px}
+  p{margin:9px 0}
+  ul,ol{margin:8px 0 12px 22px}
+  li{margin:4px 0}
+  a{color:var(--teal)}
+  strong{color:#fff;font-weight:650}
+  em{color:var(--muted)}
+  hr{border:none;border-top:1px dashed var(--border);margin:28px 0}
+
+  /* ── inline code & code blocks ── */
+  code{background:var(--surface);color:#FDBA74;font-size:.85em;padding:2px 6px;border-radius:5px;word-break:break-word}
+  .codeblock{margin:14px 0 18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .codeblock .path{background:#0B1222;color:var(--muted);font-size:11px;padding:6px 14px;
+                   border-bottom:1px solid var(--border);font-family:ui-monospace,Consolas,monospace}
+  .codeblock pre{background:var(--surface);border-left:4px solid var(--orange);padding:14px 16px;
+                 overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--text)}
+  .codeblock pre code{background:none;padding:0;color:inherit;font-size:inherit}
+
+  /* ── callouts ── */
+  .note,.warn,.qa{border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px}
+  .note{background:rgba(13,148,136,.09);border-left:4px solid var(--teal)}
+  .warn{background:rgba(234,88,12,.09);border-left:4px solid var(--orange)}
+  .qa{background:var(--surface);border-left:4px solid var(--orange)}
+  .qa .q{font-weight:700;color:var(--orange);margin-bottom:5px}
+
+  /* ── status badges ── */
+  .st{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 9px;
+      border-radius:999px;vertical-align:1px;white-space:nowrap}
+  .st.ok{background:rgba(16,185,129,.15);color:#34D399}
+  .st.warn{background:rgba(245,158,11,.15);color:#FBBF24}
+  .st.bad{background:rgba(239,68,68,.15);color:#F87171}
+  .st.info{background:rgba(13,148,136,.16);color:#2DD4BF}
+
+  /* ── presenter chips ── */
+  .chip{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:999px;
+        white-space:nowrap;vertical-align:1px}
+  .chip.haya{background:rgba(13,148,136,.16);color:#2DD4BF;border:1px solid rgba(13,148,136,.4)}
+  .chip.malik{background:rgba(234,88,12,.14);color:#FB923C;border:1px solid rgba(234,88,12,.4)}
+  .chip.mahmod{background:rgba(139,92,246,.14);color:#A78BFA;border:1px solid rgba(139,92,246,.4)}
+  .chip.all{background:rgba(148,163,184,.16);color:#CBD5E1;border:1px solid rgba(148,163,184,.4)}
+
+  /* ── tables ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin:14px 0 20px}
+  table{border-collapse:collapse;width:100%;font-size:12.8px}
+  thead th{position:sticky;top:0;background:var(--surface2);color:#fff;text-align:left;
+           padding:9px 12px;font-weight:650;border-bottom:2px solid var(--border);white-space:nowrap;z-index:1}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── details / summary ── */
+  details{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:12px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:11px 16px;font-weight:650;color:#fff;list-style:none;
+                  display:flex;align-items:center;gap:10px;user-select:none;font-size:13px}
+  details>summary::before{content:"▸";color:var(--orange);transition:transform .15s;flex-shrink:0}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details>summary:hover{background:rgba(255,255,255,.03)}
+  details .body{padding:2px 18px 14px;border-top:1px solid var(--border)}
+
+  /* ══════════ SLIDE-SPECIFIC ══════════ */
+  /* timing toggle bar */
+  .topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0 4px;margin-bottom:8px}
+  .topbar .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+  .tglbtn{cursor:pointer;font-size:12px;font-weight:700;padding:6px 14px;border-radius:999px;
+          background:var(--surface);color:var(--muted);border:1px solid var(--border);transition:.12s}
+  .tglbtn:hover{color:#fff;border-color:var(--muted)}
+  .tglbtn.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+  .modehint{font-size:11.5px;color:var(--muted)}
+
+  /* slide card */
+  .slidecard{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+             margin:18px 0;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+  .sc-head{display:flex;align-items:center;gap:12px;padding:13px 18px;background:var(--surface2);
+           border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .sc-num{font-size:20px;font-weight:800;color:var(--orange);min-width:34px;line-height:1}
+  .sc-title{font-size:16px;font-weight:700;color:#fff;flex:1;min-width:180px}
+  .dur{font-size:11px;font-weight:800;letter-spacing:.03em;background:rgba(13,148,136,.16);color:#2DD4BF;
+       border:1px solid rgba(13,148,136,.4);padding:3px 10px;border-radius:999px;white-space:nowrap}
+  .tagbadge{font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:2px 8px;border-radius:999px;text-transform:uppercase}
+  .tagbadge.core{background:rgba(234,88,12,.18);color:#FB923C}
+  .tagbadge.standard{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .tagbadge.extended{background:rgba(139,92,246,.16);color:#A78BFA}
+  .sc-body{padding:6px 18px 16px}
+  .blk{margin:12px 0}
+  .blk .k{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+          padding:2px 9px;border-radius:5px;margin-bottom:6px}
+  .k.say{background:rgba(16,185,129,.16);color:#34D399}
+  .k.do{background:rgba(13,148,136,.16);color:#2DD4BF}
+  .k.trans{background:rgba(139,92,246,.16);color:#A78BFA}
+  .blk.say .txt{font-size:14.5px;line-height:1.75;color:#F1F5F9}
+  .blk.say .txt em{color:#FCA5A5;font-style:normal;background:rgba(234,88,12,.10);padding:0 3px;border-radius:3px}
+  .blk.do .txt,.blk.trans .txt{font-size:13px;color:var(--text)}
+  .blk .txt{margin-top:2px}
+
+  /* loud next-slide banner */
+  .banner{margin:14px 0 2px;background:var(--orange);color:#fff;font-weight:800;font-size:13.5px;
+          letter-spacing:.02em;padding:11px 16px;border-radius:9px;text-align:center;
+          box-shadow:0 3px 0 #9A3412;line-height:1.5}
+  .banner .cue{color:#FFEDD5;font-style:italic}
+
+  /* presenter section divider (notes) */
+  .psection{margin:44px 0 10px;padding:16px 20px;border-radius:12px;border:1px solid var(--border)}
+  .psection h2{margin:0;border:0}
+  .psection h2::before{display:none}
+  .psection.haya{background:linear-gradient(90deg,rgba(13,148,136,.18),transparent);border-left:5px solid var(--teal)}
+  .psection.malik{background:linear-gradient(90deg,rgba(234,88,12,.18),transparent);border-left:5px solid var(--orange)}
+  .psection.mahmod{background:linear-gradient(90deg,rgba(139,92,246,.18),transparent);border-left:5px solid var(--violet)}
+  .psection p{margin:4px 0 0;font-size:12.5px;color:var(--muted)}
+
+  /* checklist */
+  .chk{list-style:none;margin:10px 0}
+  .chk li{position:relative;padding:6px 6px 6px 30px;border-bottom:1px solid var(--border);font-size:13.5px}
+  .chk li:last-child{border-bottom:none}
+  .chk li::before{content:"☐";position:absolute;left:6px;top:6px;color:var(--orange);font-size:15px}
+  .step{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .step:last-child{border-bottom:none}
+  .step .n{flex-shrink:0;width:26px;height:26px;border-radius:8px;background:var(--surface2);color:var(--orange);
+           font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .step .c{flex:1}
+  .step .c .u{font-size:11px;color:var(--muted)}
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;font-size:13px;margin:10px 0}
+  .kv dt{color:var(--muted)}
+
+  .footer-meta{margin-top:50px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+
+  @media (max-width:980px){ .sidebar{display:none} .main{margin-left:0;padding:0 16px 60px} }
+
+  /* ── print ── */
+  @media print{
+    .sidebar,.topbar{display:none}
+    .main{margin:0;padding:0}
+    body{background:#fff;color:#000}
+    .pagehead{position:static;background:#fff;color:#000;border-bottom:2px solid #000}
+    .pagehead h1{color:#000}
+    h2,h3,strong,summary,.sc-title{color:#000 !important}
+    .slidecard,.qa,.codeblock,.note,.warn,.step,tr{page-break-inside:avoid}
+    .slidecard{border-color:#999;box-shadow:none}
+    .sc-head{background:#eee}
+    .banner{background:#eee;color:#000;box-shadow:none;border:1px dashed #000}
+    .banner .cue{color:#000}
+    details:not([open])>*:not(summary){display:block}
+    code{background:#eee;color:#000}
+    .codeblock pre{background:#f5f5f5;color:#000}
+    thead th{background:#ddd;color:#000;position:static}
+    a{color:#000}
+    .page-break{page-break-before:always}
+    body.view-core .slidecard[data-tag="standard"],
+    body.view-core .slidecard[data-tag="extended"],
+    body.view-standard .slidecard[data-tag="extended"]{display:block}
+  }
+
+  /* timing-variant visibility */
+  body.view-core .slidecard[data-tag="standard"],
+  body.view-core .slidecard[data-tag="extended"],
+  body.view-standard .slidecard[data-tag="extended"]{display:none}
+</style>
+</head>
+<body class="view-standard">
+<nav class="sidebar">
+  <div class="side-brand">
+    <div class="logo">Opti<span>Cart</span> Deck</div>
+    <p>Slide-by-slide spoken script</p>
+  </div>
+  <ul class="toc">
+    <li><a href="#ros" class="">Run of show</a></li>
+    <li><a href="#sec-intro" class="">Section 1 · Introduction &amp; Planning</a></li>
+    <li><a href="#sec-demo" class="">Section 2 · Live Demo</a></li>
+    <li><a href="#sec-learn" class="">Section 3 · Learned &amp; Challenging</a></li>
+    <li><a href="#sec-close" class="">Section 4 · Evaluation &amp; Close</a></li>
+  </ul>
+  <div class="side-files">
+    <h4>Presentation kit</h4>
+    <a href="presentation_script.html">Presentation Script</a>
+    <a href="live_demo_script.html">Live Demo Script</a>
+    <a href="presenter_notes.html">Presenter Notes</a>
+    <a href="rehearsal.html">Rehearsal Guide</a>
+    <a href="../00_ANALYSIS/analysis_refresh.html">↳ Analysis Refresh</a>
+    <a href="../project_master_guide.html">↳ Master Guide</a>
+    <a href="../questions/question_bank.html">↳ Question Bank</a>
+  </div>
+</nav>
+<div class="main">
+  <div class="content">
+    <header class="pagehead">
+      <h1>Presentation Script — Master Scenario</h1>
+      <span class="badge-oc">🛒 <b>OptiCart</b> Appliances</span>
+    </header>
+    <p class="subtitle">One card per slide with the exact words to say, demo cues, handoffs, and a loud advance banner. Toggle CORE / STANDARD / EXTENDED to match your time slot.</p>
+    <div class="topbar">
+      <span class="lbl">Timing variant</span>
+      <button class="tglbtn" data-mode="core" onclick="setMode('core')">CORE · ~14 min</button>
+      <button class="tglbtn active" data-mode="standard" onclick="setMode('standard')">STANDARD · ~21 min</button>
+      <button class="tglbtn" data-mode="extended" onclick="setMode('extended')">EXTENDED · ~23 min</button>
+      <span class="modehint">Buttons show/hide slide cards by tag. STANDARD = CORE + standard cards; EXTENDED = everything.</span>
+    </div>
+    <script>setMode('standard');</script>
+<div class="note"><strong>How to run this file.</strong> Every slide is a card in presentation order. <span class="k say" style="margin:0">Say</span> is the exact spoken text — deliver it naturally, it already describes the current, post-fix behavior. <span class="k do" style="margin:0">Do</span> is your demo/pointer cue. The loud orange <strong>banner</strong> is your advance trigger — when you hear yourself say that sentence, click to the next slide. Use the toggle buttons above to hide cards that don't fit your time slot. Numbers here match the <code>.pptx</code> slide numbers exactly.</div>
+
+<h2 id="ros">Run of show</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>Slide</th><th>Presenter</th><th>Sec</th><th>Variant</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Title — OptiCart Appliances</td><td><span class="chip all">All</span></td><td>30</td><td><span class="tagbadge core">core</span></td></tr>
+<tr><td>2</td><td>The Idea — problem &amp; vision</td><td><span class="chip malik">Malik</span></td><td>40</td><td><span class="tagbadge core">core</span></td></tr>
+<tr><td>3</td><td>Agenda</td><td><span class="chip malik">Malik</span></td><td>30</td><td><span class="tagbadge core">core</span></td></tr>
+<tr><td>4</td><td>Planning — Requirements &amp; Roles</td><td><span class="chip mahmod">Mahmod</span></td><td>55</td><td><span class="tagbadge standard">std</span></td></tr>
+<tr><td>5</td><td>Planning — Design Direction</td><td><span class="chip haya">Haya</span></td><td>45</td><td><span class="tagbadge standard">std</span></td></tr>
+<tr><td>6</td><td>Planning — Database Design (ERD)</td><td><span class="chip mahmod">Mahmod</span></td><td>70</td><td><span class="tagbadge core">core</span></td></tr>
+<tr><td>7</td><td>Architecture &amp; Request Lifecycle</td><td><span class="chip malik">Malik</span></td><td>75</td><td><span class="tagbadge core">core</span></td></tr>
+<tr><td>8</td><td>Sprint Board &amp; Pre-Dev Decisions</td><td><span class="chip malik">Malik</span></td><td>55</td><td><span class="tagbadge standard">std</span></td></tr>
+<tr><td>9</td><td>Demo Handoff</td><td><span class="chip malik">Malik</span></td><td>20</td><td><span class="tagbadge core">core</span></td></tr>
+<tr><td>10</td><td>Haya — Frontend Demo</td><td><span class="chip haya">Haya</span></td><td>100</td><td><span class="tagbadge core">core</span></td></tr>
+<tr><td>11</td><td>Malik — Auth &amp; Security Demo</td><td><span class="chip malik">Malik</span></td><td>100</td><td><span class="tagbadge core">core</span></td></tr>
+<tr><td>12</td><td>Malik — Checkout &amp; Order Lifecycle</td><td><span class="chip malik">Malik</span></td><td>85</td><td><span class="tagbadge core">core</span></td></tr>
+<tr><td>13</td><td>Mahmod — Data Integrity in Action</td><td><span class="chip mahmod">Mahmod</span></td><td>85</td><td><span class="tagbadge core">core</span></td></tr>
+<tr><td>14</td><td>Procurement &amp; Weighted-Average Cost</td><td><span class="chip mahmod">Mahmod</span> <span class="chip haya">Haya</span></td><td>80</td><td><span class="tagbadge standard">std</span></td></tr>
+<tr><td>15</td><td>Analytics &amp; Audit Trail</td><td><span class="chip malik">Malik</span> <span class="chip mahmod">Mahmod</span></td><td>70</td><td><span class="tagbadge standard">std</span></td></tr>
+<tr><td>16</td><td>What We Learned</td><td><span class="chip all">All</span></td><td>75</td><td><span class="tagbadge core">core</span></td></tr>
+<tr><td>17</td><td>Still Challenging (optional)</td><td><span class="chip all">All</span></td><td>45</td><td><span class="tagbadge extended">ext</span></td></tr>
+<tr><td>18</td><td>Evaluation Criteria — Mapping</td><td><span class="chip malik">Malik</span></td><td>70</td><td><span class="tagbadge standard">std</span></td></tr>
+<tr><td>19</td><td>Security — Found → Fixed → Proven</td><td><span class="chip malik">Malik</span></td><td>70</td><td><span class="tagbadge extended">ext</span></td></tr>
+<tr><td>20</td><td>Honesty — Open Items &amp; Plan</td><td><span class="chip malik">Malik</span></td><td>55</td><td><span class="tagbadge standard">std</span></td></tr>
+<tr><td>21</td><td>Future — Smart Energy Advisor</td><td><span class="chip all">All</span></td><td>80</td><td><span class="tagbadge core">core</span></td></tr>
+<tr><td>22</td><td>Thank You / Q&amp;A</td><td><span class="chip all">All</span></td><td>30</td><td><span class="tagbadge core">core</span></td></tr>
+</tbody></table></div>
+<div class="kv">
+<dt>CORE (13 cards)</dt><dd>≈ <strong>13–14 min</strong> — slides 1,2,3,6,7,9,10,11,12,13,16,21,22. Demos trimmed to headline actions.</dd>
+<dt>STANDARD (20 cards)</dt><dd>≈ <strong>21 min</strong> — CORE + planning depth, procurement, analytics, evaluation, honesty.</dd>
+<dt>EXTENDED (22 cards)</dt><dd>≈ <strong>23 min</strong> — everything, incl. "still challenging" and the security found→fixed→proven arc.</dd>
+</div>
+
+<h2 id="sec-intro">Section 1 · Introduction &amp; Planning</h2>
+
+<div class="slidecard" data-tag="core">
+  <div class="sc-head"><span class="sc-num">1</span><span class="sc-title">Title — OptiCart Appliances</span><span class="chip all">All</span><span class="dur">30s</span><span class="tagbadge core">core</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">Good morning, everyone. We're Haya, Malik, and Mahmod, and we built <strong>OptiCart Appliances</strong> — a full e-commerce platform for home appliances, from the customer storefront all the way to the admin back office. Over the next twenty minutes we'll show you the product working live, explain the decisions behind it, and be honest about what we'd still improve.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Title slide up. All three visible on camera. Malik speaks.</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…what we'd still improve."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">Is this a real deployed site?</div>It runs fully locally with mock Stripe, Cloudinary, and mail, so everything you'll see is live against a real database — just offline.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "Great question — hold that thought for two minutes and it'll answer itself in the demo."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="core">
+  <div class="sc-head"><span class="sc-num">2</span><span class="sc-title">The Idea — problem &amp; vision</span><span class="chip malik">Malik</span><span class="dur">40s</span><span class="tagbadge core">core</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">Buying an appliance online is a trust exercise. The customer needs accurate stock, a checkout they can trust with their card, and a store that actually keeps its promises after the sale. And the shop owner needs the other half: real inventory, real fulfilment, real numbers. So we built <strong>both sides of one system</strong> — a storefront that's a pleasure to shop, and an admin back office that runs the business, with three roles: customer, inventory manager, and super admin. Our north star was simple: <em>get the money and the stock exactly right, every single time</em>.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Point to the two-halves visual (storefront ↔ back office).</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…the money and the stock exactly right, every single time."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">Why appliances specifically?</div>They're high-value, variant-heavy (sizes, capacities), and stock accuracy really matters — a great domain to show inventory and payment correctness.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "That's exactly where we're heading — let me set up the architecture and it'll click."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="core">
+  <div class="sc-head"><span class="sc-num">3</span><span class="sc-title">Agenda</span><span class="chip malik">Malik</span><span class="dur">30s</span><span class="tagbadge core">core</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">Here's our plan: first the planning phase — requirements, data design, and architecture. Then a live demo where each of us presents the part we owned — Haya the frontend, me the backend, Mahmod the database. Then the two or three concepts each of us leveled up on, an honest look at what we'd still improve, and we'll close with a future feature we're genuinely excited about. Questions at the end, but if something's burning, just jump in.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Agenda slide; briefly point to each of the three names.</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…if something's burning, just jump in."</span> &lt;&lt;&lt;</div>
+    <div class="warn"><strong>If interrupted:</strong> "Let's park that for the demo — it'll land better with the screen in front of you."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="standard">
+  <div class="sc-head"><span class="sc-num">4</span><span class="sc-title">Planning — Requirements &amp; Roles Matrix</span><span class="chip mahmod">Mahmod</span><span class="dur">55s</span><span class="tagbadge standard">std</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">We started from requirements. Functionally: browse, search and filter, cart and wishlist that work even for guests, checkout, orders, and verified reviews on the customer side; and product, category, order, coupon, low-stock, procurement, user, analytics, and audit management on the staff side. Non-functionally we committed to four things up front: <strong>security</strong> — proper token auth and role-based access; <strong>correctness under load</strong> — no overselling, no float money; <strong>responsiveness</strong> — it works on a phone; and <strong>maintainability</strong> — typed end to end. Those four goals drove every later decision. And access is strictly tiered — each role is a superset of the one below it, enforced on the server, not just hidden in the UI.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Show the roles matrix (customer ⊂ inventory_manager ⊂ super_admin) from the RBAC diagram.</div></div>
+    <div class="blk trans"><span class="k trans">Transition</span><div class="txt">"Haya turned those requirements into a look and feel — Haya?"</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…enforced on the server, not just hidden in the UI."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">How is a role enforced?</div><code>authenticate</code> sets req.user from the JWT, then <code>authorize(...roles)</code> gates each route — <code>server/src/middleware/auth.ts</code>.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "The enforcement detail is Malik's auth slide — he'll show it firing live."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="standard">
+  <div class="sc-head"><span class="sc-num">5</span><span class="sc-title">Planning — Design Direction</span><span class="chip haya">Haya</span><span class="dur">45s</span><span class="tagbadge standard">std</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">On the design side I wanted one consistent visual language, not a patchwork. So before building screens I defined a token system in Tailwind — colors, spacing, typography, radii — all in one config, and every component reads from those tokens. That's why the storefront and the admin panel feel like the same product. I sketched the core flows first: the product list with a filter sidebar, the product detail with a variant picker and gallery, and the cart-to-checkout path. The rule I gave myself was: the shopper should never see a frozen screen — every load has a skeleton, every action has feedback.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Show wireframe/token direction slide; point to the shared color tokens.</div></div>
+    <div class="blk trans"><span class="k trans">Transition</span><div class="txt">"The design sits on top of Mahmod's data model — Mahmod, show them the shape of the data."</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…every load has a skeleton, every action has feedback."</span> &lt;&lt;&lt;</div>
+    <div class="warn"><strong>If interrupted:</strong> "I'll show the live version of that in my demo — it's more convincing moving."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="core">
+  <div class="sc-head"><span class="sc-num">6</span><span class="sc-title">Planning — Database Design (ERD)</span><span class="chip mahmod">Mahmod</span><span class="dur">70s</span><span class="tagbadge core">core</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">This is our data model — fourteen collections, with <strong>User</strong> and <strong>Product</strong> as the two hubs. My core design rule was: <em>embed what's owned and read together, reference what's shared and edited independently</em>. So a product's variants live inside the product document — they have no life of their own — but an order only <em>references</em> the product. Now the important part: orders and purchases store <strong>snapshots</strong> — a frozen copy of the name and price at that moment — so if we rename or reprice a product later, history never silently changes. And money is always integer cents, never a float, because floats can't represent money exactly. Every index you see exists to serve a specific query or enforce a specific rule — like one review per customer per product, guaranteed by the database itself.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Show the ERD (from <code>diagrams/diagrams.html</code> §6). Point to Product→variants (embedded) vs Order→Product (reference), and the snapshot fields on Order/Purchase.</div></div>
+    <div class="blk trans"><span class="k trans">Transition</span><div class="txt">"That data model runs inside Malik's architecture — Malik, take us through the request path."</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…guaranteed by the database itself."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">Why 14 collections, isn't that a lot?</div>Each maps to one bounded concept — none is a catch-all. It keeps every document focused and every index meaningful.</div>
+      <div class="qa"><div class="q">Why not put variants in their own collection?</div>They're always read with the product and never shared; embedding means one query loads everything with atomic updates.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "I've got a whole slide on embed-versus-reference in the backup deck — happy to go deep in Q&amp;A."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="core">
+  <div class="sc-head"><span class="sc-num">7</span><span class="sc-title">Architecture &amp; Request Lifecycle</span><span class="chip malik">Malik</span><span class="dur">75s</span><span class="tagbadge core">core</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">Three layers: a React single-page app, an Express API in TypeScript, and MongoDB, with Stripe and Cloudinary alongside. Every request runs the same chain — security headers, CORS, body parsing, rate limiting, then per-route authentication and authorization, then the controller, and finally <em>one</em> error handler that turns any failure into the same JSON shape. One detail I'm proud of: the Stripe webhook is mounted with the <strong>raw body before the JSON parser</strong>, because Stripe signs the raw bytes — parse them first and you can't verify the signature. That ordering isn't cosmetic; it's what makes our payments tamper-proof. The whole thing is TypeScript end to end, so a mismatch between frontend and backend is a compile error, not a 2 a.m. bug.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Show the layered architecture + request-lifecycle diagrams. Trace the raw-webhook fork with the cursor.</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…a compile error, not a 2 a.m. bug."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">Why one error handler?</div>Every failure becomes <code>{error:{message,code}}</code> — a predictable contract for the client and no stack traces leak. <code>middleware/errorHandler.ts</code>.</div>
+      <div class="qa"><div class="q">Is the API stateless?</div>Per request, yes — authorization rides in the JWT. The only server state is the hashed refresh token and the in-memory rate limiter.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "The webhook ordering has its own deep-dive slide — let me finish the overview and we'll come back to it."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="standard">
+  <div class="sc-head"><span class="sc-num">8</span><span class="sc-title">Sprint Board &amp; Pre-Dev Decisions</span><span class="chip malik">Malik</span><span class="dur">55s</span><span class="tagbadge standard">std</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">We planned the work as eleven epics broken into forty sub-tasks on a Jira board — foundation, database, auth, catalog, cart, checkout, accounts, reviews, admin, super-admin tools, and automation — split fairly evenly across the three of us by strength. And we made the big technical bets before writing features, so we wouldn't have to relitigate them: MERN with TypeScript everywhere, MongoDB's document model for variant-heavy products, integer cents for money, a two-token auth scheme, Stripe for payments, and a Tailwind token system for the UI. Those pre-development decisions are why the codebase feels coherent rather than stitched together.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Show the sprint board table (11 epics / 40 sub-tasks / 311 points). If asked about "In Progress" statuses, use the note below.</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…coherent rather than stitched together."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">The board shows checkout as "In Progress" — isn't it done?</div>That CSV is an early export; every epic on it is complete and hardened in the code now — payments actually went beyond the original plan with a fail-closed webhook and real refunds.</div>
+      <div class="qa"><div class="q">How did you split work?</div>By strength: Haya frontend, Mahmod models and indexes, Malik backend and architecture — roughly even on story points.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "The board's a planning artifact — the running product is the real status, and you're about to see it."</div>
+  </div>
+</div>
+
+<h2 id="sec-demo">Section 2 · Live Demo</h2>
+
+<div class="slidecard" data-tag="core">
+  <div class="sc-head"><span class="sc-num">9</span><span class="sc-title">Demo Handoff</span><span class="chip malik">Malik</span><span class="dur">20s</span><span class="tagbadge core">core</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">Enough slides — let's use the actual product. We'll follow one shopper's journey end to end, and each of us will jump in on the part we built. Haya starts as the customer.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Switch screen-share to the browser, logged out, on the storefront home. Hand mouse to Haya.</div></div>
+    <div class="blk trans"><span class="k trans">Transition</span><div class="txt">"Haya, you're up — take them shopping."</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"Haya, you're up — take them shopping."</span> &lt;&lt;&lt;</div>
+    <div class="warn"><strong>If interrupted:</strong> "Let's let the demo answer that — it's literally the next click."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="core">
+  <div class="sc-head"><span class="sc-num">10</span><span class="sc-title">Haya — Frontend Demo</span><span class="chip haya">Haya</span><span class="dur">100s</span><span class="tagbadge core">core</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">I'm a guest — not logged in. Notice the category menu up here is live from the database, not hardcoded, so it navigates by slug. I'll search "refrigerator" — the search is part of the URL, so this result is shareable and the back button just works. I'll open the filter sidebar, narrow by price and rating, and open a product. Here's the variant picker — choosing a size updates the price, the gallery, and the stock, and add-to-cart targets that exact variant. I'll heart it to my wishlist, add it to the cart — and see that toast confirm it — and start checkout. All of this as a guest: my cart lives in local storage, and the moment I sign in it merges into my account. That's the handoff — Malik, what happens when I log in?</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Home → live category nav → search "refrigerator" → filter (price+rating) → product detail → switch variant → wishlist → add to cart (show toast) → click Checkout → stop at the sign-in prompt.</div></div>
+    <div class="blk trans"><span class="k trans">Transition</span><div class="txt">"That's the handoff — Malik, what happens when I log in?"</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"Malik, what happens when I log in?"</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">Is the guest cart lost on login?</div>No — it merges into the server cart and stock is re-validated, so nothing is lost and nothing oversells.</div>
+      <div class="qa"><div class="q">Why is search in the URL?</div>So results are shareable and bookmarkable and the browser back button behaves correctly — the list page just reads the query param.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "Hold that — the merge is literally Malik's first click, it'll answer itself."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="core">
+  <div class="sc-head"><span class="sc-num">11</span><span class="sc-title">Malik — Auth &amp; Security Demo</span><span class="chip malik">Malik</span><span class="dur">100s</span><span class="tagbadge core">core</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">I'll sign in as the customer. The moment I do, the guest cart merges — same items, now on my account. Now look at the Network tab. Every API call carries a short-lived access token in the Authorization header — and that token lives only in memory, never in local storage, so a malicious script can't steal it. When it expires, watch: a call 401s, the client <em>silently</em> refreshes using an http-only cookie, and retries — the user sees nothing. And the refresh isn't just reissued, it's <strong>rotated</strong>, with theft detection: if an old token is ever replayed, we revoke every session. One more — I'll hit an admin-only endpoint as this customer and it comes straight back <strong>403</strong>. That's role-based access enforced on the server; hiding the button was never going to be enough.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Open DevTools → Network. Sign in (customer@opticart.dev / Customer123!) → show cart merged → point to Bearer header → if reproducible, show a 401→refresh→retry chain → attempt an admin API call → show 403.</div></div>
+    <div class="blk trans"><span class="k trans">Transition</span><div class="txt">"Cart's ready and I'm authenticated — let me actually pay."</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…hiding the button was never going to be enough."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">Why in memory and not localStorage?</div>localStorage is readable by any script — one XSS and the token's gone. Memory dies on reload and we refresh from the http-only cookie.</div>
+      <div class="qa"><div class="q">What if the 401→refresh doesn't reproduce live?</div>I'll describe it and point to <code>services/api.ts</code>; I have a screenshot in the backup as well.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "The full rotation sequence has a dedicated backup slide — let me finish paying and I'll pull it up."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="core">
+  <div class="sc-head"><span class="sc-num">12</span><span class="sc-title">Malik — Checkout &amp; Order Lifecycle</span><span class="chip malik">Malik</span><span class="dur">85s</span><span class="tagbadge core">core</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">I'll apply a coupon and pay. Two things I want you to trust here. First, the server <strong>re-prices the whole cart and re-validates the coupon from scratch</strong> at checkout — the browser's numbers are never trusted, so you can't tamper your way to a discount. Second, stock only decrements when the payment actually succeeds, and it does so with an <strong>atomic guarded operation</strong> — two people buying the last unit at the same instant can't both win; the database arbitrates, and we never oversell. Now I'll switch to the admin queue as staff and move this order: confirm, ship, deliver. Each transition is validated — you can't skip states — and each one fires the customer's notification bell and an email. Payment is captured by the machine; fulfilment stays a human decision. Mahmod, this is where your integrity rules earn their keep.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Apply coupon SAVE10 → complete mock payment → show order (pending/paid). Switch to manager@opticart.dev → Orders queue → advance confirm→ship→deliver → show customer bell/email notification.</div></div>
+    <div class="blk trans"><span class="k trans">Transition</span><div class="txt">"Mahmod, this is where your integrity rules earn their keep."</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"Mahmod, this is where your integrity rules earn their keep."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">What if two people buy the last item at once?</div>Stock decrement is a conditional <code>$inc</code> guarded by <code>stock ≥ qty</code>; the loser clamps to zero and logs — it never goes negative.</div>
+      <div class="qa"><div class="q">Is this real Stripe?</div>Mock mode in the demo (no keys), but the exact same code path and fail-closed webhook run against real Stripe when keys are present.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "The coupon re-validation is in <code>order.ts</code> — I'll show the line in Q&amp;A; let me finish the lifecycle first."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="core">
+  <div class="sc-head"><span class="sc-num">13</span><span class="sc-title">Mahmod — Data Integrity in Action</span><span class="chip mahmod">Mahmod</span><span class="dur">85s</span><span class="tagbadge core">core</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">Now the order is delivered, so this customer can leave a <strong>verified review</strong> — and only now. That rule is enforced by the database with a unique index, one review per customer per product, and the rating recalculates inside a transaction so the product's average is never half-updated. Let me show you why snapshots matter: here's the order document — the item name and price are frozen copies. If I rename this product in admin, the past order still shows what the customer actually bought. And one more guarantee — our audit log is <strong>append-only</strong>; if I try to edit an entry directly, the model hook rejects it. Information you can quietly change isn't a record — so we made it impossible to change.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Open the delivered product → submit a verified review. Show an order doc's snapshot fields (via the ERD/diagram, not a live shell). Describe the append-only audit rejection (reference the diagram; do not risk a live shell edit unless rehearsed).</div></div>
+    <div class="blk trans"><span class="k trans">Transition</span><div class="txt">"There's one more collection I'm proud of — how we restock. Haya, pull up procurement."</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…so we made it impossible to change."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">Why a transaction for reviews?</div>So the Review write and the product's rating recompute commit together — the average can never disagree with the reviews.</div>
+      <div class="qa"><div class="q">Snapshots duplicate data — isn't that bad?</div>It's intentional: normalization gives the truth <em>now</em>, but an order needs the truth <em>as it was then</em>. History wins.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "The unique-index detail is on <code>models/Review.ts</code> — I'll show it in Q&amp;A; let me finish the snapshot point."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="standard">
+  <div class="sc-head"><span class="sc-num">14</span><span class="sc-title">Procurement &amp; Weighted-Average Cost</span><span class="chip mahmod">Mahmod</span> <span class="chip haya">Haya</span><span class="dur">80s</span><span class="tagbadge standard">std</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">This is our newest feature and my favorite. When the shop buys more stock, we don't just add units — we recompute the product's <strong>weighted-average cost</strong>, so margins stay honest as buy-prices drift. I'll record a purchase: stock goes up, and the cost blends old and new by quantity — and both happen in a <strong>single atomic database operation</strong>, so stock and cost can never disagree. Watch the dashboard's month-spend tile move too. And if the record fails to save after the stock update, we automatically <em>undo</em> the change — a compensating step — so a half-finished purchase can't corrupt inventory. That "do, then undo on failure" pattern is the thing I'm proudest of learning.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Admin → Purchases → record a purchase for a product → show stock increase + cost update + dashboard spend tile change.</div></div>
+    <div class="blk trans"><span class="k trans">Transition</span><div class="txt">"All this data becomes decisions — Malik, show them analytics and the audit trail."</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…the thing I'm proudest of learning."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">Why weighted-average and not FIFO?</div>Average cost computes atomically in one document update and is defensible for a store like this; FIFO needs per-lot layers — a bigger model than the requirement called for.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "The pipeline that does this is <code>controllers/purchase.ts</code> — happy to walk the <code>$map</code> in Q&amp;A."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="standard">
+  <div class="sc-head"><span class="sc-num">15</span><span class="sc-title">Analytics &amp; Audit Trail</span><span class="chip malik">Malik</span> <span class="chip mahmod">Mahmod</span><span class="dur">70s</span><span class="tagbadge standard">std</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">The super-admin sees the business at a glance — revenue, order volume, top products, customer growth, and now purchase spend, so you can read <strong>revenue against cost</strong> in one place. These are MongoDB aggregation pipelines over delivered orders, not numbers we massage on the client. And underneath everything sits the audit log: every privileged action — a role change, a refund, a stock purchase — is written as an immutable entry with who, what, and before-and-after. That's how a real business stays accountable, and it's all queryable because we indexed it deliberately.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">admin@opticart.dev → Analytics (show revenue vs purchase-spend charts) → Audit Logs (show entries, filters).</div></div>
+    <div class="blk trans"><span class="k trans">Transition</span><div class="txt">"That's the product. Let's step back and tell you what building it taught us."</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…what building it taught us."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">Are analytics precomputed?</div>Computed on demand via aggregation pipelines; recommendations are the precomputed nightly cache — different freshness needs, different strategies.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "The aggregation detail is in <code>controllers/analytics.ts</code> — let me hand to the learnings and we'll circle back."</div>
+  </div>
+</div>
+
+<h2 id="sec-learn">Section 3 · Learned &amp; Challenging</h2>
+
+<div class="slidecard" data-tag="core">
+  <div class="sc-head"><span class="sc-num">16</span><span class="sc-title">What We Learned</span><span class="chip all">All</span><span class="dur">75s</span><span class="tagbadge core">core</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt"><strong>Haya:</strong> I got confident with <em>single-flight request coordination</em> — making ten simultaneous 401s trigger one refresh, not ten. It taught me the fix isn't more state, it's one point of coordination. And I really internalized why a token belongs in memory, not storage.<br>
+    <strong>Malik:</strong> Mine is <em>compensating transactions</em> — MongoDB gives me single-document atomicity, but when an operation spans two documents I learned to make the second step reversible and undo the first on failure, instead of reaching for heavy machinery. That one idea made our whole costing feature safe.<br>
+    <strong>Mahmod:</strong> Mine is <em>partial indexes</em> — a unique constraint that only applies to a filtered subset. It turned a real bug into an elegant rule: one active low-stock alert per variant, unlimited history, enforced by the database. I now see indexes as business rules, not just speed.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Each presenter says their own line. Slide shows three cards, one per person in their chip color.</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…indexes as business rules, not just speed."</span> &lt;&lt;&lt;</div>
+    <div class="warn"><strong>If interrupted:</strong> "Happy to go deeper on any of these in Q&amp;A — each came from a real problem in this codebase."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="extended">
+  <div class="sc-head"><span class="sc-num">17</span><span class="sc-title">Still Challenging (optional)</span><span class="chip all">All</span><span class="dur">45s</span><span class="tagbadge extended">ext</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">And to be honest about what's still hard: <strong>Haya</strong> — automated frontend testing; I lean on manual testing and want real component tests. <strong>Malik</strong> — designing for horizontal scale; I can reason about Redis and leader-locks but haven't run this across multiple instances for real. <strong>Mahmod</strong> — a formal data-migration workflow; index sync we handle, but evolving live data safely is the next thing I want to master. None of these block the product — they're the edges we're growing into.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Each says their own line; keep it light and confident, not apologetic.</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…the edges we're growing into."</span> &lt;&lt;&lt;</div>
+    <div class="warn"><strong>If interrupted:</strong> "We've actually got a concrete plan for each of these — it's on the improvements slide."</div>
+  </div>
+</div>
+
+<h2 id="sec-close">Section 4 · Evaluation &amp; Close</h2>
+
+<div class="slidecard" data-tag="standard">
+  <div class="sc-head"><span class="sc-num">18</span><span class="sc-title">Evaluation Criteria — How We Meet Them</span><span class="chip malik">Malik</span><span class="dur">70s</span><span class="tagbadge standard">std</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">Quickly, against the rubric — and everything here you either just saw or can open in the code. <strong>Backend architecture and security</strong>: the middleware chain, rotation auth, fail-closed payments. <strong>Database design</strong>: snapshots, the partial and unique indexes, append-only audit. <strong>UI/UX and responsiveness</strong>: the token system, the live nav, the mobile drawer. <strong>Functionality</strong>: twenty-six features, all working. <strong>Code quality and maintainability</strong>: one error pipeline, typed schemas, and a regression suite. We didn't cherry-pick — every criterion maps to a concrete file we can show you.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Show the evaluation-criteria mapping table (criterion → evidence → presenter).</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…every criterion maps to a concrete file we can show you."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">Where's your evidence for security?</div>Rotation + reuse detection in <code>auth.ts</code>, fail-closed webhook in <code>order.ts</code>, and <code>test_fixes.ts</code> passing 20/20.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "Pick any criterion and I'll jump straight to the file — that's the next slide anyway."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="extended">
+  <div class="sc-head"><span class="sc-num">19</span><span class="sc-title">Security — Found → Fixed → Proven</span><span class="chip malik">Malik</span><span class="dur">70s</span><span class="tagbadge extended">ext</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">I want to show you how we work, not just what we built. We audited our own code and found real issues — and fixed them. The webhook once trusted unverified input; now it's fail-closed. The stock decrement had an oversell race; now it's atomic. Refunds were status-only; now they actually move money and write an audit entry. A JWT secret was silently using a fallback because of an import-ordering bug; fixed and it now refuses to boot in production without a real secret. And we didn't just claim the fixes — we wrote a regression suite that proves all twenty checks pass. Finding your own bugs and proving the fix is the job.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Show the found→fixed→proven table. If time, run <code>test_fixes.ts</code> live (20/20).</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…finding your own bugs and proving the fix is the job."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">How do you know the fixes didn't break anything?</div><code>server/src/test_fixes.ts</code> — 20 checks, plus clean TypeScript builds and an HTTP smoke test through the real middleware.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "I can run the suite live right now if you'd like to see 20/20."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="standard">
+  <div class="sc-head"><span class="sc-num">20</span><span class="sc-title">Honesty — Open Items &amp; Plan</span><span class="chip malik">Malik</span><span class="dur">55s</span><span class="tagbadge standard">std</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">And here's what we'd still improve — because pretending it's perfect would be the least convincing thing we could do. Our rate limiting and scheduler assume a single instance; scaling out means Redis and a leader-lock. We log in a dev format, we don't have CI or Docker yet, and our client bundle could be split. None of these is a correctness bug on the happy path — they're scaling and hygiene items, and every one has a clear, specific fix on our roadmap. We'd rather raise them ourselves than have you find them.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Show the improvements roadmap (from <code>audit/audit.html</code> §3). Calm, confident tone.</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…rather raise them ourselves than have you find them."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">What's the single biggest one?</div>Multi-instance readiness — moving the rate-limit store and cron to Redis with a leader-lock. It's the one change that unlocks horizontal scale.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "That specific item is on the roadmap slide with an owner — let me point to it."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="core">
+  <div class="sc-head"><span class="sc-num">21</span><span class="sc-title">Future — Smart Energy Advisor</span><span class="chip all">All</span><span class="dur">80s</span><span class="tagbadge core">core</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">We'll close with the feature we most want to build next: the <strong>Smart Energy Advisor</strong>. Right now two $899 refrigerators look identical — but one might cost double to run. So we'd store each appliance's energy use and show the shopper its <strong>real yearly running cost under Lebanese conditions</strong> — the EDL grid tariff <em>and</em> the private generator rate — and let people sort the whole catalog by <strong>total cost of ownership</strong>, not sticker price. That's a number no competitor in Lebanon shows, and here's the best part: it's cheap to build. Our schema already has the optional-subdocument pattern, our filter pipeline already takes new branches, and we precompute the cost on save exactly like we already do for purchases. "This fridge costs a hundred and twenty dollars a year to run — this one, fifty-five." In Lebanon, that's the sentence that closes the sale.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Show the Smart Energy Advisor concept + the TCO formula + the Lebanon EDL/generator argument.</div></div>
+    <div class="blk trans"><span class="k trans">Transition</span><div class="txt">"And that's OptiCart — thank you."</div></div>
+    <div class="banner">&gt;&gt;&gt; NEXT SLIDE — advance on: <span class="cue">"…that's the sentence that closes the sale."</span> &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">Why not just show the EU energy label?</div>The label is a static letter; our differentiator is the localized money number — EDL plus generator split, adjustable to the customer's own outage hours — and sorting the catalog by it.</div>
+      <div class="qa"><div class="q">How long to build?</div>Steps one and two are an afternoon — an optional subdoc and two query branches; the calculator UI is the bulk of a second day.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> "The full implementation path is in our future-feature doc — four small steps, all citing existing patterns."</div>
+  </div>
+</div>
+
+<div class="slidecard" data-tag="core">
+  <div class="sc-head"><span class="sc-num">22</span><span class="sc-title">Thank You / Q&amp;A</span><span class="chip all">All</span><span class="dur">30s</span><span class="tagbadge core">core</span></div>
+  <div class="sc-body">
+    <div class="blk say"><span class="k say">Say</span><div class="txt">That's OptiCart — a storefront and a back office that get the money and the stock right, built by the three of us: Haya on the frontend, Mahmod on the database, and me on the backend and architecture. Thank you for watching — we'd love your questions.</div></div>
+    <div class="blk do"><span class="k do">Do</span><div class="txt">Thank-you slide with all three names + roles. Open the floor. Keep the backup deck ready.</div></div>
+    <div class="banner">&gt;&gt;&gt; END OF MAIN DECK — open Q&amp;A; jump to backup slides on deep-dive questions &lt;&lt;&lt;</div>
+    <details><summary>Expected questions</summary><div class="body">
+      <div class="qa"><div class="q">Can we see the code for X?</div>Yes — name it and we'll open the file; we know exactly where everything lives.</div>
+    </div></details>
+    <div class="warn"><strong>If interrupted:</strong> N/A — this is the close. Route deep-dives to the matching backup slide (see rehearsal.html).</div>
+  </div>
+</div>
+    <div class="footer-meta">
+      Generated 2026-07-11 against git HEAD <code>175e68e</code> · Team:
+      <span class="chip haya">Haya</span> Frontend · <span class="chip mahmod">Mahmod</span> Database ·
+      <span class="chip malik">Malik</span> Backend &amp; Architecture · Spoken content describes POST-FIX behavior;
+      every technical claim is consistent with the refreshed analysis and current code.
+    </div>
+  </div>
+</div>
+<script>
+const links=[...document.querySelectorAll('.toc a[href^="#"]')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{const a=map.get(e.target.id);
+  if(a&&e.isIntersecting){links.forEach(l=>l.classList.remove('active'));a.classList.add('active');}});},
+  {rootMargin:'-8% 0px -80% 0px'});
+document.querySelectorAll('h2[id],h3[id]').forEach(h=>obs.observe(h));
+function setMode(m){document.body.className='view-'+m;
+  document.querySelectorAll('.tglbtn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));}
+</script>
+
+</body>
+</html>

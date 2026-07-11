@@ -75,6 +75,18 @@
 - [x] Structural verification PASS on all 8: zero placeholders, balanced details/table/svg, template chrome present, 124≥120 .qa, each manual 7 sections
 - Build with: `node <scratch>/html2/build2.mjs` (skips missing bodies; mkdirs subdirs). Bodies live in `<scratch>/html2/bodies/`; shared template `presentation/assets/template.html`.
 
+## Phase 4 — Presentation kit (2026-07-11) — COMPLETE. Output under `presentation/presentation/`
+- Instructor-mandated structure honored: intro/idea → planning (requirements, design, ERD, architecture, sprint, pre-dev) → per-member live demo (Haya FE / Malik BE / Mahmod DB) → learned concepts → still-challenging → evaluation-criteria mapping → Future (Smart Energy Advisor + Lebanon argument) → Q&A.
+- Shared shell `scratchpad/html2/slides_template.html` + `build_slides.mjs`; bodies in `scratchpad/html2/slidebodies/`. Rebuild: `node build_slides.mjs`.
+- [x] `presentation_script.html` (61.7 KB) — 22 slide cards; each has SAY/DO/TRANSITION, loud NEXT-SLIDE banner (22 banners), EXPECTED QUESTIONS (.qa collapsed), IF INTERRUPTED (.warn). Timing toggles CORE(13 cards,~14m)/STANDARD(20,~21m)/EXTENDED(22,~23m) via inline JS; run-of-show table + variant totals. Slide numbers 1–22 are the canonical numbering reused everywhere.
+- [x] `live_demo_script.html` (30 KB) — pre-demo checklist, env+accounts, 27 click-by-click steps (Part A Haya 1–8 / Part B Malik 9–18 / Part C Mahmod 19–27), screenshots table (A1–C26), global fallback plan. Every path is a refresh-verified COMPLETE feature — no step routes through anything unfinished.
+- [x] `presenter_notes.html` (28 KB) — one print-clean section per person (page-break between), each: slides, demo steps, learned+challenging, top-10 Qs.
+- [x] `rehearsal.html` (24 KB) — 3-pass rehearsal plan, pacing warnings (overrun-prone slides), equipment checklist, deep-dive→backup-slide map (B2–B19), day-of run sheet.
+- [x] `build_pptx.py` (regenerable) → `OptiCart_Main.pptx` (22 slides, STANDARD, mirrors script numbering) + `OptiCart_Backup.pptx` (20 deep-dive slides B1–B20). Design mirrors HTML kit (dark slate/orange/teal/violet, presenter-colored accent bands). Key diagrams = NATIVE shapes (architecture bands, ERD hubs, auth sequence, middleware chain, checkout) → fully offline, no SVG→PNG dependency. python-pptx 1.0.2.
+- [x] Programmatic inspector in build_pptx.py (overflow heuristic + empty-title check): **0 issues** on both decks after fixes (dynamic title sizing for long titles, taller subtitle boxes, shortened one auth label; inspector now skips decorative/empty shapes).
+- [x] Structural verify of 4 HTML: 0 placeholders, balanced details/table tags, template chrome present, 22 cards = 22 banners, tag split 13 core/7 std/2 ext.
+- Ground truth: eval criteria (12) from evaluation_mapping.html; demo storyline from its single-narrative ordering; Smart Energy Advisor + Lebanon TCO argument from future_feature.html; sprint board from the real `OptiCart_Jira_Import_v2.csv`. Credentials: customer/manager/admin @opticart.dev; coupons SAVE10, FLAT50.
+
 ### Phase 3 — COMPLETE (2026-07-11). Deliverable tree under `presentation/`:
 - `00_ANALYSIS/analysis_refresh.html` (gate) · `project_master_guide.html`
 - `manuals/{malik,haya,mahmod}_manual.html`
