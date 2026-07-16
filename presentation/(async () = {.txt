@@ -1,0 +1,41 @@
+(async () => {
+  const TOKEN = 'PASTE_TOKEN_HERE';   // ← replace this each demo
+
+  // Auto-detect the API base URL from requests the app already made
+  const entry = performance.getEntriesByType('resource')
+    .map(e => e.name)
+    .find(n => /\/api\/(auth|products|orders|cart)/.test(n));
+  const API = entry ? entry.slice(0, entry.indexOf('/api') + 4) : null;
+  if (!API) { console.error('Could not auto-detect API URL — set it manually.'); return; }
+  console.log('Detected API base:', API);
+
+  const res = await fetch(`${API}/admin-stub`, {
+    headers: { Authorization: `Bearer ${TOKEN}` },
+    credentials: 'include',
+  });
+  const body = await res.json().catch(() => ({}));
+  console.log('%cStatus: ' + res.status, res.status === 403 ? 'color:red;font-weight:bold' : 'color:green');
+  console.log('Response body:', body);
+})();
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+
+1. Log in as a customer, land on the storefront.
+2. Open DevTools → Network tab.
+3. Turn on Preserve log (checkbox at top) so nothing clears.
+4. Set the filter to Fetch/XHR (hides images/CSS noise).
+5. Wait ~30 seconds. Don't click anything. (Let the access token expire.)
+6. Now click something that calls the API without reloading — easiest options:
+  - the notification bell → produces a request named notifications, or
+  - navigate to Account / Orders via an in-app link → request named orders (and/or profile).

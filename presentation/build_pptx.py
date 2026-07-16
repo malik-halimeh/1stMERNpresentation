@@ -207,13 +207,13 @@ def build_main(path):
     ])
 
     # 3 · Agenda
-    s = base(prs); header(s, 3, "Agenda", "Malik")
+    s = base(prs); header(s, 3, "Agenda + What's Different About Us", "Malik")
     bullets(s, [
         "Planning — requirements, data design, architecture.",
         "Live demo — each of us presents the part we built.",
+        "Watch for our stand-out features: product views, a search bar on every admin page, exportable audit logs, and recommendations.",
         "What we learned — and what we'd still improve.",
-        "Future feature — the Smart Energy Advisor.",
-        "Q&A — jump in any time.",
+        "Future feature — the Smart Energy Advisor. Q&A any time.",
     ])
 
     # 4 · Requirements & Roles
@@ -272,40 +272,41 @@ def build_main(path):
     ], space_after=14)
 
     # 10 · Haya demo
-    s = base(prs); header(s, 10, "Demo — Frontend", "Haya", accent=TEAL)
+    s = base(prs); header(s, 10, "Demo — Storefront, Image ↔ Variant Sync & Views", "Haya", accent=TEAL)
     bullets(s, [
-        "Guest browsing — live category nav (by slug), URL-driven search (shareable, back-safe).",
-        "Filters update list + URL together; skeletons on every load.",
-        "Product detail — variant picker updates price, gallery, stock; add-to-cart targets the SKU.",
-        "Wishlist + cart (with toast) as a guest — cart lives in localStorage.",
-        "Start checkout → the moment I sign in, the guest cart merges. Handoff to Malik.",
+        "Guest browsing — live category nav (by slug), URL-driven search (shareable, back-safe), filters.",
+        "Views under each product: every product-page visit records a view; the card shows the total (social proof).",
+        "Image ↔ variant ↔ price are linked: pick a size → price, gallery, and stock all update at once.",
+        "It works both ways: scroll the gallery into another size's photos → that variant auto-selects.",
+        "Wishlist + cart (with toast) as a guest; on sign-in the cart merges. Handoff to Malik.",
     ])
 
     # 11 · Malik auth
-    s = base(prs); header(s, 11, "Demo — Auth & Security", "Malik", accent=ORANGE)
+    s = base(prs); header(s, 11, "Demo — Auth, Axios & the Global Search Bar", "Malik", accent=ORANGE)
     bullets(s, [
         "Sign in → guest cart merges onto the account.",
-        "Network tab: access token in the Authorization header — memory only, never localStorage.",
-        "On 401 the client silently refreshes (http-only cookie) and retries — rotated, with theft detection.",
-        "Hit an admin endpoint as a customer → 403. RBAC enforced on the server, not hidden in the UI.",
+        "Axios adds the login token to every request in one place — token kept in memory, never localStorage.",
+        "On 401, Axios silently gets a new token (http-only cookie) and retries — one interceptor, not per-call.",
+        "Why Axios over fetch: write the token + auto-refresh once, not on every call (a missed spot = a hole).",
+        "Admin endpoint as a customer → 403 (RBAC on the server). Plus one reusable search box on every admin page.",
     ])
 
     # 12 · Malik checkout
-    s = base(prs); header(s, 12, "Demo — Checkout & Order Lifecycle", "Malik", accent=ORANGE)
+    s = base(prs); header(s, 12, "Demo — Checkout, Lifecycle & Verified Reviews", "Malik", accent=ORANGE)
     bullets(s, [
-        "Apply a coupon, pay: the server re-prices the cart and re-validates the coupon from scratch.",
-        "Stock decrements only on payment success — an atomic guarded op; two buyers can't both win.",
-        "Admin queue: confirm → ship → deliver, each transition validated (no skipping).",
-        "Each step fires the customer's bell + email. Payment is machine; fulfilment stays human.",
+        "Apply a coupon, pay: the server re-prices the cart and re-checks the coupon from scratch (never trusts the browser).",
+        "Stock drops only on payment success — one safe DB step; two buyers of the last unit can't both win.",
+        "Admin queue: confirm → ship → deliver, each move validated (no skipping); the customer is notified each time.",
+        "Delivered unlocks a verified review — only a real buyer of that product can review it.",
     ])
 
-    # 13 · Mahmod integrity
-    s = base(prs); header(s, 13, "Demo — Data Integrity in Action", "Mahmod", accent=VIOLET)
+    # 13 · Mahmod integrity + audit export + notifications
+    s = base(prs); header(s, 13, "Demo — Integrity, Audit Export & Notifications", "Mahmod", accent=VIOLET)
     bullets(s, [
-        "Delivered order unlocks a verified review — unique index (one per customer/product) + transaction recompute.",
-        "Order snapshots: rename the product, the past order is unchanged.",
-        "Audit log is append-only — editing an entry is rejected by the model hook.",
-        "Information you can quietly change isn't a record — so we made it impossible to change.",
+        "Snapshots: an order freezes the product name + price — rename it later, the old order is unchanged.",
+        "Audit log is append-only — every privileged action recorded (who, what, before/after); edits are rejected.",
+        "Export the audit log — search filters the table, Export gives a CSV of EXACTLY those rows (JSON option too).",
+        "Order notifications: each status change sends the customer a clear message (bell + email).",
     ])
 
     # 14 · Procurement
@@ -317,12 +318,14 @@ def build_main(path):
         "If the record fails after the stock update, we auto-undo it — a compensating step.",
     ])
 
-    # 15 · Analytics & Audit
-    s = base(prs); header(s, 15, "Analytics & Audit Trail", "Malik")
+    # 15 · Smart Discovery — Views, Trending & Recommendations
+    s = base(prs); header(s, 15, "Smart Discovery — Views, Trending & Recommendations", "All")
     bullets(s, [
-        "Super admin sees revenue, order volume, top products, customer growth — and now purchase spend.",
-        "Revenue vs cost in one place — real MongoDB aggregation pipelines, not client-side math.",
-        "Under everything: an immutable audit log — who, what, before & after — deliberately indexed.",
+        "Views (Haya): every product-page open records a view; sent in small batches; own collection; auto-deletes after 180 days.",
+        "Trending (Mahmod): a nightly job flags the products with the most VIEWS in the last 7 days.",
+        "Most-selling (Mahmod): flags the products with the most UNITS SOLD in the last 7 days — a different signal.",
+        "Recommendations (Malik): a co-occurrence engine — products bought by the same customer score together (recency-weighted).",
+        "All computed nightly and read from a cache, so pages stay fast; the analytics charts use live aggregation.",
     ])
 
     # 16 · Learned
@@ -444,7 +447,7 @@ def _eval_table(s):
         ("Security", "rotation+reuse (auth.ts); fail-closed webhook; test_fixes 20/20", "Malik"),
         ("Database design", "snapshots; partial + unique indexes; append-only audit", "Mahmod"),
         ("UI/UX & responsiveness", "token system; live nav; mobile drawer (StorefrontLayout)", "Haya"),
-        ("Functionality", "26 verified features — merge, checkout, procurement, analytics", "All"),
+        ("Functionality", "25+ features — image↔variant sync, views, audit export, recommendations", "All"),
         ("Code quality", "one error pipeline; typed schemas; regression suite", "Malik/Haya"),
     ]
     _table(s, rows, top=1.75, widths=[3.6, 6.5, 1.8], fsize=12)
