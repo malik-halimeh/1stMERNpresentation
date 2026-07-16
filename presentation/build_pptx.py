@@ -330,15 +330,15 @@ def build_main(path):
 
     # 16 · Learned
     s = base(prs); header(s, 16, "What We Learned", "All")
-    note_card(s, 0.7, 1.8, 3.9, 3.9, "Haya — Single-flight refresh",
-              "N concurrent 401s trigger ONE refresh, not N. The fix wasn't more state — it was one point "
-              "of coordination. And why a token belongs in memory, not storage.", TEAL)
-    note_card(s, 4.75, 1.8, 3.9, 3.9, "Malik — Compensating transactions",
-              "When an operation spans two documents, make the second step reversible and undo the first on "
-              "failure — instead of heavy machinery. It made our costing feature safe.", ORANGE)
-    note_card(s, 8.8, 1.8, 3.8, 3.9, "Mahmod — Partial indexes",
-              "A unique constraint on a filtered subset turned a real bug into an elegant rule: one active "
-              "low-stock alert per variant, unlimited history — enforced by the database.", VIOLET)
+    note_card(s, 0.7, 1.8, 3.9, 3.9, "Haya — How login really works",
+              "Why the login token lives in the app's memory, not the browser's storage — so a sneaky script "
+              "can't read it and pretend to be you. Web security became real, not just a word.", TEAL)
+    note_card(s, 4.75, 1.8, 3.9, 3.9, "Malik — Plan for failure",
+              "When one action changes two things, if the second step fails I undo the first — so we're never "
+              "left half-finished (stock up, but the record never saved). \"What if this fails?\" made my code safer.", ORANGE)
+    note_card(s, 8.8, 1.8, 3.8, 3.9, "Mahmod — The database enforces the rules",
+              "One simple database rule guarantees one review per customer per product — so even a bug can't "
+              "create duplicates. The database protects our data; it isn't just a passive box.", VIOLET)
 
     # 17 · Challenging
     s = base(prs); header(s, 17, "Still Challenging (honest)", "All")
@@ -360,7 +360,7 @@ def build_main(path):
     # 20 · Honesty
     s = base(prs); header(s, 20, "Honesty — Open Items & Plan", "Malik")
     bullets(s, [
-        "Rate limiting + scheduler assume a single instance → Redis store + cron leader-lock.",
+        "Rate limiting works today (counts requests per user/IP, blocks floods); multi-server needs a shared Redis store.",
         "Dev-format logging; no CI/Docker yet; client bundle could be code-split.",
         "None is a happy-path correctness bug — they're scaling & hygiene items, each with a clear fix.",
         "We'd rather raise them ourselves than have you find them.",
