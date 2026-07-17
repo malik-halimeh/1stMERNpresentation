@@ -361,5 +361,81 @@ function setMode(m){document.body.className='view-'+m;
   document.querySelectorAll('.tglbtn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));}
 </script>
 
+<!-- ══════════ inline editor (edit the script right in the browser) ══════════ -->
+<style>
+  #editbar{position:fixed;right:16px;bottom:16px;z-index:9999;display:flex;gap:8px;align-items:center;
+           background:rgba(30,41,59,.97);border:1px solid #334155;border-radius:12px;padding:8px 10px;
+           box-shadow:0 8px 28px rgba(0,0,0,.45);font-family:system-ui,"Segoe UI",Roboto,sans-serif}
+  #editbar button{cursor:pointer;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:8px;
+                  border:1px solid #334155;background:#0F172A;color:#94A3B8;transition:.12s;white-space:nowrap}
+  #editbar button:hover{color:#fff;border-color:#94A3B8}
+  #editbar button.on{background:#EA580C;color:#fff;border-color:#EA580C}
+  #editbar .eb-status{font-size:11px;color:#94A3B8;min-width:64px;text-align:right}
+  body.editing .content{outline:2px dashed rgba(234,88,12,.4);outline-offset:10px;border-radius:8px}
+  body.editing .content [contenteditable="true"]{caret-color:#EA580C}
+  @media print{#editbar{display:none}}
+</style>
+<div id="editbar">
+  <span class="eb-status" id="eb-status">Saved</span>
+  <button id="eb-edit" type="button" title="Turn text editing on/off">✎ Edit</button>
+  <button id="eb-save" type="button" title="Download this file with your edits baked in, to replace the original">⭳ Save file</button>
+  <button id="eb-reset" type="button" title="Discard edits stored in this browser and reload the original">↺ Reset</button>
+</div>
+<script>
+(function(){
+  var content=document.querySelector('.content');
+  if(!content) return;
+  var KEY='opticart-edit:'+(location.pathname.split('/').pop()||'page');
+  var statusEl=document.getElementById('eb-status');
+  var editBtn=document.getElementById('eb-edit');
+  var saveBtn=document.getElementById('eb-save');
+  var resetBtn=document.getElementById('eb-reset');
+  var editing=false, timer=null;
+
+  // restore edits previously made in this browser
+  try{var saved=localStorage.getItem(KEY); if(saved!==null) content.innerHTML=saved;}catch(e){}
+
+  function status(t){statusEl.textContent=t;}
+  function persist(){
+    try{localStorage.setItem(KEY,content.innerHTML); status('Saved ✓');}
+    catch(e){status('Save failed');}
+  }
+  function setEditing(on){
+    editing=on;
+    content.setAttribute('contenteditable',on?'true':'false');
+    content.spellcheck=on;
+    document.body.classList.toggle('editing',on);
+    editBtn.classList.toggle('on',on);
+    editBtn.textContent=on?'✓ Done':'✎ Edit';
+    status(on?'Editing…':'Saved ✓');
+  }
+  editBtn.addEventListener('click',function(){setEditing(!editing);});
+  content.addEventListener('input',function(){
+    status('Saving…'); clearTimeout(timer); timer=setTimeout(persist,500);
+  });
+  resetBtn.addEventListener('click',function(){
+    if(!confirm('Discard all edits stored in this browser and reload the original file?')) return;
+    try{localStorage.removeItem(KEY);}catch(e){}
+    location.reload();
+  });
+  saveBtn.addEventListener('click',function(){
+    var wasEditing=editing;
+    if(editing) setEditing(false);                 // don't leak edit state into the file
+    var clone=document.documentElement.cloneNode(true);
+    var c=clone.querySelector('.content'); if(c) c.removeAttribute('contenteditable');
+    var b=clone.querySelector('body'); if(b) b.classList.remove('editing');
+    var s=clone.querySelector('#eb-status'); if(s) s.textContent='Saved';
+    var eb=clone.querySelector('#eb-edit'); if(eb){eb.textContent='✎ Edit';eb.classList.remove('on');}
+    var html='<!DOCTYPE html>\n'+clone.outerHTML;
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));
+    a.download=(location.pathname.split('/').pop()||'page.html');
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+    if(wasEditing) setEditing(true);
+  });
+})();
+</script>
+
 </body>
 </html>
